@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Danh sách phiếu - Kế Toán Dễ Dàng</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../styles.css">
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen" data-page-module="vouchers">
+    <div class="flex h-screen">
+        <aside class="w-64 glassmorphism border-r border-slate-700 flex flex-col"></aside>
+        <main class="flex-1 overflow-auto p-6">
+            <div id="module-vouchers" class="module fade-in">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-slate-100">Danh sách phiếu</h2>
+                    <p class="text-slate-400 mt-1">Danh sách chứng từ được gom từ Nhật ký chung. Bấm “Xem chi tiết” để xem toàn bộ định khoản của chứng từ đó.</p>
+                </div>
+                <div class="mb-6 flex flex-wrap items-end gap-3">
+                    <div>
+                        <label class="block text-sm mb-2">Loại phiếu</label>
+                        <select id="vouchers-type-filter" onchange="renderVouchers()" class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none min-w-[220px]">
+                            <option value="all">Tất cả</option>
+                            <option value="receive">Phiếu Thu</option>
+                            <option value="pay">Phiếu Chi</option>
+                            <option value="import">Phiếu Nhập</option>
+                            <option value="export">Phiếu Xuất</option>
+                            <option value="fnb">Đơn FnB</option>
+                            <option value="interbranch">Điều chuyển</option>
+                            <option value="internal">Điều chỉnh</option>
+                            <option value="closing">Kết chuyển</option>
+                            <option value="depreciation">Khấu hao</option>
+                        </select>
+                    </div>
+                    <div class="flex-1 min-w-[240px]">
+                        <label class="block text-sm mb-2">Tìm kiếm</label>
+                        <input id="vouchers-keyword" oninput="renderVouchers()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:border-cyan-500" placeholder="Nhập số phiếu, chi nhánh, đối tác...">
+                    </div>
+                </div>
+                <div class="glassmorphism rounded-xl p-6 overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-slate-800">
+                            <tr>
+                                <th class="text-left p-4 font-semibold">Số</th>
+                                <th class="text-left p-4 font-semibold">Ngày</th>
+                                <th class="text-left p-4 font-semibold">Loại</th>
+                                <th class="text-left p-4 font-semibold">Chi nhánh</th>
+                                <th class="text-left p-4 font-semibold">Đối tác</th>
+                                <th class="text-right p-4 font-semibold">Giá trị</th>
+                                <th class="text-right p-4 font-semibold">Dòng</th>
+                                <th class="text-center p-4 font-semibold">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vouchers-table"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="../app.js"></script>
+</body>
+</html>

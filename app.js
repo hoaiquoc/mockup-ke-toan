@@ -4,8 +4,13 @@
 
     // Products - Inventory data
     let products = [
-        { id: "SP001", name: "Áo thun", quantity: 100, avgCost: 150000, totalValue: 15000000 },
-        { id: "SP002", name: "Quần Jean", quantity: 50, avgCost: 300000, totalValue: 15000000 }
+        { id: "SP001", name: "Áo thun", quantity: 100, avgCost: 150000, totalValue: 15000000, productType: "NGUYEN_LIEU", recipe: [] },
+        { id: "SP002", name: "Quần Jean", quantity: 50, avgCost: 300000, totalValue: 15000000, productType: "NGUYEN_LIEU", recipe: [] },
+        { id: "NL001", name: "Hạt cafe", quantity: 5, avgCost: 200000, totalValue: 1000000, productType: "NGUYEN_LIEU", recipe: [] },
+        { id: "NL002", name: "Sữa đặc", quantity: 10, avgCost: 40000, totalValue: 400000, productType: "NGUYEN_LIEU", recipe: [] },
+        { id: "NL003", name: "Đường", quantity: 20, avgCost: 18000, totalValue: 360000, productType: "NGUYEN_LIEU", recipe: [] },
+        { id: "MA001", name: "Cafe sữa đá", quantity: 0, avgCost: 0, totalValue: 0, productType: "MON_AN", recipe: [{ materialId: "NL001", quantityRequired: 0.02 }, { materialId: "NL002", quantityRequired: 0.03 }, { materialId: "NL003", quantityRequired: 0.01 }] },
+        { id: "MA002", name: "Cafe đen", quantity: 0, avgCost: 0, totalValue: 0, productType: "MON_AN", recipe: [{ materialId: "NL001", quantityRequired: 0.02 }, { materialId: "NL003", quantityRequired: 0.01 }] }
     ];
 
     // Fixed assets
@@ -28,11 +33,17 @@
     let productStocksByBranch = {
         CN01: {
             SP001: { quantity: 100, avgCost: 150000, totalValue: 15000000 },
-            SP002: { quantity: 50, avgCost: 300000, totalValue: 15000000 }
+            SP002: { quantity: 50, avgCost: 300000, totalValue: 15000000 },
+            NL001: { quantity: 5, avgCost: 200000, totalValue: 1000000 },
+            NL002: { quantity: 10, avgCost: 40000, totalValue: 400000 },
+            NL003: { quantity: 20, avgCost: 18000, totalValue: 360000 }
         },
         CN02: {
             SP001: { quantity: 0, avgCost: 0, totalValue: 0 },
-            SP002: { quantity: 0, avgCost: 0, totalValue: 0 }
+            SP002: { quantity: 0, avgCost: 0, totalValue: 0 },
+            NL001: { quantity: 0, avgCost: 0, totalValue: 0 },
+            NL002: { quantity: 0, avgCost: 0, totalValue: 0 },
+            NL003: { quantity: 0, avgCost: 0, totalValue: 0 }
         }
     };
 
@@ -57,11 +68,13 @@
         "id_111": { id: "id_111", code: "111", name: "Tiền mặt", type: "Tài sản", balance: 50000000, parentId: null, isParent: false, children: [], defaultChildId: null },
         "id_112": { id: "id_112", code: "112", name: "Tiền gửi ngân hàng", type: "Tài sản", balance: 100000000, parentId: null, isParent: false, children: [], defaultChildId: null },
         "id_131": { id: "id_131", code: "131", name: "Phải thu khách hàng", type: "Tài sản", balance: 10000000, parentId: null, isParent: false, children: [], defaultChildId: null },
+        "id_136": { id: "id_136", code: "136", name: "Phải thu nội bộ", type: "Tài sản", balance: 0, parentId: null, isParent: false, children: [], defaultChildId: null },
         "id_133": { id: "id_133", code: "133", name: "Thuế GTGT được khấu trừ", type: "Tài sản", balance: 0, parentId: null, isParent: false, children: [], defaultChildId: null },
-        "id_156": { id: "id_156", code: "156", name: "Hàng hóa", type: "Tài sản", balance: 30000000, parentId: null, isParent: false, children: [], defaultChildId: null },
+        "id_156": { id: "id_156", code: "152", name: "Nguyên vật liệu (Kho thô)", type: "Tài sản", balance: 30000000, parentId: null, isParent: false, children: [], defaultChildId: null },
         "id_211": { id: "id_211", code: "211", name: "Tài sản cố định", type: "Tài sản", balance: 35000000, parentId: null, isParent: false, children: [], defaultChildId: null },
         "id_214": { id: "id_214", code: "214", name: "Khấu hao tài sản cố định", type: "Tài sản", balance: 0, parentId: null, isParent: false, children: [], defaultChildId: null },
         "id_331": { id: "id_331", code: "331", name: "Phải trả người bán", type: "Nợ phải trả", balance: -20000000, parentId: null, isParent: false, children: [], defaultChildId: null },
+        "id_336": { id: "id_336", code: "336", name: "Phải trả nội bộ", type: "Nợ phải trả", balance: 0, parentId: null, isParent: false, children: [], defaultChildId: null },
         "id_334": { id: "id_334", code: "334", name: "Phải trả người lao động", type: "Nợ phải trả", balance: 0, parentId: null, isParent: false, children: [], defaultChildId: null },
         "id_3331": { id: "id_3331", code: "3331", name: "Thuế GTGT phải nộp", type: "Nợ phải trả", balance: 0, parentId: null, isParent: false, children: [], defaultChildId: null },
         "id_3334": { id: "id_3334", code: "3334", name: "Thuế TNDN phải nộp", type: "Nợ phải trả", balance: 0, parentId: null, isParent: false, children: [], defaultChildId: null },
@@ -84,16 +97,17 @@
     // Opening balances for accounts
     let openingBalances = {};
 
-    // Locked periods (key: "YYYY-MM", value: { isLocked: boolean, isClosed: boolean })
+    // Locked periods
+    // Shape: { [branchId|'all']: { [YYYY-MM]: { isLocked: boolean, isClosed: boolean } } }
     let lockedPeriods = {};
 
     // Dynamic closing rules
     let closingRules = [
-        { id: "CR001", ten_quy_tac: "Kết chuyển Giá vốn", tai_khoan_nguon: "632", tai_khoan_dich: "911", loai_ket_chuyen: "chi_phi" },
-        { id: "CR002", ten_quy_tac: "Kết chuyển Chi phí quản lý", tai_khoan_nguon: "642", tai_khoan_dich: "911", loai_ket_chuyen: "chi_phi" },
-        { id: "CR003", ten_quy_tac: "Kết chuyển Doanh thu", tai_khoan_nguon: "511", tai_khoan_dich: "911", loai_ket_chuyen: "doanh_thu" },
-        { id: "CR004", ten_quy_tac: "Kết chuyển Thu nhập khác", tai_khoan_nguon: "711", tai_khoan_dich: "911", loai_ket_chuyen: "doanh_thu" },
-        { id: "CR005", ten_quy_tac: "Kết chuyển Chi phí khác", tai_khoan_nguon: "811", tai_khoan_dich: "911", loai_ket_chuyen: "chi_phi" }
+        { id: "CR001", ten_quy_tac: "Kết chuyển Giá vốn", tai_khoan_nguon: "632", tai_khoan_dich: "911", loai_ket_chuyen: "chi_phi", branchId: null },
+        { id: "CR002", ten_quy_tac: "Kết chuyển Chi phí quản lý", tai_khoan_nguon: "642", tai_khoan_dich: "911", loai_ket_chuyen: "chi_phi", branchId: null },
+        { id: "CR003", ten_quy_tac: "Kết chuyển Doanh thu", tai_khoan_nguon: "511", tai_khoan_dich: "911", loai_ket_chuyen: "doanh_thu", branchId: null },
+        { id: "CR004", ten_quy_tac: "Kết chuyển Thu nhập khác", tai_khoan_nguon: "711", tai_khoan_dich: "911", loai_ket_chuyen: "doanh_thu", branchId: null },
+        { id: "CR005", ten_quy_tac: "Kết chuyển Chi phí khác", tai_khoan_nguon: "811", tai_khoan_dich: "911", loai_ket_chuyen: "chi_phi", branchId: null }
     ];
     let closingRuleCounter = 6;
 
@@ -108,6 +122,8 @@
     let transactionIdCounter = 4;
     let importCounter = 1;
     let exportCounter = 1;
+    let interBranchTransferCounter = 1;
+    let fnbOrderCounter = 1;
     const appStorageKey = 'ke_toan_de_dang_state_v1';
     const defaultAppState = JSON.parse(JSON.stringify({
         products,
@@ -125,6 +141,8 @@
         transactionIdCounter,
         importCounter,
         exportCounter,
+        interBranchTransferCounter,
+        fnbOrderCounter,
         closingRuleCounter,
         branchCounter
     }));
@@ -146,6 +164,8 @@
             transactionIdCounter,
             importCounter,
             exportCounter,
+            interBranchTransferCounter,
+            fnbOrderCounter,
             closingRuleCounter,
             branchCounter
         };
@@ -167,12 +187,61 @@
         transactionIdCounter = state.transactionIdCounter || defaultAppState.transactionIdCounter;
         importCounter = state.importCounter || defaultAppState.importCounter;
         exportCounter = state.exportCounter || defaultAppState.exportCounter;
+        interBranchTransferCounter = state.interBranchTransferCounter || defaultAppState.interBranchTransferCounter;
+        fnbOrderCounter = state.fnbOrderCounter || defaultAppState.fnbOrderCounter;
         closingRuleCounter = state.closingRuleCounter || defaultAppState.closingRuleCounter;
         branchCounter = state.branchCounter || defaultAppState.branchCounter;
 
         if (!Array.isArray(branches) || branches.length === 0) {
             branches = JSON.parse(JSON.stringify(defaultAppState.branches));
             branchCounter = defaultAppState.branchCounter;
+        }
+
+        if (lockedPeriods && typeof lockedPeriods === 'object' && !lockedPeriods.all) {
+            const legacyKeys = Object.keys(lockedPeriods);
+            const looksLegacy = legacyKeys.some(key => /^\d{4}-\d{2}$/.test(key));
+            if (looksLegacy) {
+                lockedPeriods = { all: lockedPeriods };
+            } else {
+                lockedPeriods = { all: {} };
+            }
+        }
+        if (!lockedPeriods || typeof lockedPeriods !== 'object') {
+            lockedPeriods = { all: {} };
+        }
+
+        if (accounts && accounts.id_156) {
+            if (accounts.id_156.code === '156') accounts.id_156.code = '152';
+            if (accounts.id_156.name === 'Hàng hóa') accounts.id_156.name = 'Nguyên vật liệu (Kho thô)';
+        }
+
+        if (Array.isArray(products)) {
+            products = products.map(p => {
+                const productType = p.productType || 'NGUYEN_LIEU';
+                const recipe = Array.isArray(p.recipe) ? p.recipe : [];
+                return { ...p, productType, recipe };
+            });
+        } else {
+            products = JSON.parse(JSON.stringify(defaultAppState.products));
+        }
+
+        const hasAnyDish = Array.isArray(products) && products.some(p => p.productType === 'MON_AN');
+        if (!hasAnyDish) {
+            const seedProducts = (defaultAppState.products || []).filter(p => {
+                const id = String(p.id || '');
+                return p.productType === 'MON_AN' || id.startsWith('NL');
+            });
+            seedProducts.forEach(sp => {
+                if (!products.some(p => p.id === sp.id)) {
+                    products.push(JSON.parse(JSON.stringify(sp)));
+                }
+            });
+        }
+
+        if (Array.isArray(closingRules)) {
+            closingRules.forEach(rule => {
+                if (rule.branchId === undefined) rule.branchId = null;
+            });
         }
 
         Object.values(accounts).forEach(account => {
@@ -213,14 +282,14 @@
             const normalized = {};
             branches.forEach(branch => {
                 normalized[branch.id] = {};
-                products.forEach(product => {
+                products.filter(product => product.productType !== 'MON_AN').forEach(product => {
                     normalized[branch.id][product.id] = { quantity: 0, avgCost: 0, totalValue: 0 };
                 });
             });
 
             const defaultBranchId = branches[0]?.id;
             if (defaultBranchId) {
-                products.forEach(product => {
+                products.filter(product => product.productType !== 'MON_AN').forEach(product => {
                     normalized[defaultBranchId][product.id] = {
                         quantity: product.quantity,
                         avgCost: product.avgCost,
@@ -229,6 +298,29 @@
                 });
             }
             productStocksByBranch = normalized;
+        }
+
+        branches.forEach(branch => {
+            if (!productStocksByBranch[branch.id] || typeof productStocksByBranch[branch.id] !== 'object') {
+                productStocksByBranch[branch.id] = {};
+            }
+            products.filter(p => p.productType !== 'MON_AN').forEach(p => {
+                if (!productStocksByBranch[branch.id][p.id]) {
+                    productStocksByBranch[branch.id][p.id] = { quantity: 0, avgCost: 0, totalValue: 0 };
+                }
+            });
+        });
+
+        const defaultBranchId = branches[0]?.id;
+        if (defaultBranchId) {
+            products.filter(p => p.productType !== 'MON_AN').forEach(p => {
+                const stock = productStocksByBranch[defaultBranchId]?.[p.id];
+                if (!stock) return;
+                const isEmpty = (stock.quantity || 0) === 0 && (stock.totalValue || 0) === 0 && (stock.avgCost || 0) === 0;
+                if (isEmpty && (p.quantity || 0) > 0) {
+                    productStocksByBranch[defaultBranchId][p.id] = { quantity: p.quantity, avgCost: p.avgCost, totalValue: p.totalValue };
+                }
+            });
         }
 
         fixedAssets = fixedAssets.map(asset => {
@@ -272,6 +364,30 @@
         return new Date().toISOString().split('T')[0];
     }
 
+    function getPeriodKeyFromDate(date) {
+        const d = new Date(date);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    }
+
+    function getLockedPeriodDataByBranch(branchId, periodKey) {
+        const scope = branchId || 'all';
+        if (!lockedPeriods || typeof lockedPeriods !== 'object') lockedPeriods = {};
+        if (!lockedPeriods[scope] || typeof lockedPeriods[scope] !== 'object') lockedPeriods[scope] = {};
+        if (!lockedPeriods[scope][periodKey]) {
+            lockedPeriods[scope][periodKey] = { isLocked: false, isClosed: false };
+        }
+        return lockedPeriods[scope][periodKey];
+    }
+
+    function getEffectiveLockedPeriodData(branchId, periodKey) {
+        const globalData = getLockedPeriodDataByBranch('all', periodKey);
+        const branchData = branchId && branchId !== 'all' ? getLockedPeriodDataByBranch(branchId, periodKey) : { isLocked: false, isClosed: false };
+        return {
+            isLocked: !!(globalData?.isLocked || branchData?.isLocked),
+            isClosed: !!(globalData?.isClosed || branchData?.isClosed)
+        };
+    }
+
     // Get display account - handles parent -> default child mapping
     function getDisplayAccount(accountId) {
         let account = accounts[accountId];
@@ -292,7 +408,7 @@
             account.children.forEach(childId => {
                 total += getAccountBalance(childId);
             });
-            return total;
+            return (account.balance || 0) + total;
         }
         return account.balance;
     }
@@ -327,7 +443,7 @@
     // Update account 156 (Hàng hóa) balance from products
     function updateInventoryAccount() {
         let totalInventoryValue = 0;
-        products.forEach(p => {
+        products.filter(p => p.productType !== 'MON_AN').forEach(p => {
             totalInventoryValue += p.totalValue;
         });
         accounts["id_156"].balance = totalInventoryValue;
@@ -345,6 +461,12 @@
 
     function syncGlobalProductsFromBranchStocks() {
         products.forEach(product => {
+            if (product.productType === 'MON_AN') {
+                product.quantity = 0;
+                product.totalValue = 0;
+                product.avgCost = 0;
+                return;
+            }
             let totalQty = 0;
             let totalValue = 0;
 
@@ -398,7 +520,7 @@
     }
 
     function populatePartnerSelects() {
-        const selects = ['recv-partner', 'pay-partner', 'import-partner', 'export-partner'];
+        const selects = ['recv-partner', 'pay-partner', 'import-partner', 'export-partner', 'fnb-partner'];
         selects.forEach(selectId => {
             const select = document.getElementById(selectId);
             if (!select) return;
@@ -453,7 +575,12 @@
         }
 
         if (account.isParent && account.children.length > 0) {
-            return account.children.reduce((sum, childId) => sum + getAccountBalanceByBranch(childId, branchId), 0);
+            let ownBalance = 0;
+            getTransactionsByBranch(branchId).forEach(txn => {
+                if (txn.debitAccountId === accountId) ownBalance += txn.amount;
+                if (txn.creditAccountId === accountId) ownBalance -= txn.amount;
+            });
+            return ownBalance + account.children.reduce((sum, childId) => sum + getAccountBalanceByBranch(childId, branchId), 0);
         }
 
         let balance = 0;
@@ -469,7 +596,11 @@
         if (!select) return;
 
         const currentValue = select.value;
-        select.innerHTML = includeAll ? '<option value="all">Toàn công ty</option>' : '';
+        if (includeAll && selectId === 'closing-config-branch-filter') {
+            select.innerHTML = '<option value="all">Mặc định (áp dụng chung)</option>';
+        } else {
+            select.innerHTML = includeAll ? '<option value="all">Toàn công ty</option>' : '';
+        }
 
         branches.forEach(branch => {
             const option = document.createElement('option');
@@ -485,7 +616,7 @@
     }
 
     function populateBranchSelects() {
-        ['recv-branch', 'pay-branch', 'import-branch', 'export-branch', 'asset-branch'].forEach(selectId => populateBranchSelect(selectId, false));
+        ['recv-branch', 'pay-branch', 'import-branch', 'export-branch', 'asset-branch', 'ibt-from-branch', 'ibt-to-branch', 'fnb-branch'].forEach(selectId => populateBranchSelect(selectId, false));
         [
             'dashboard-branch-filter',
             'accounts-branch-filter',
@@ -495,7 +626,11 @@
             'receivables-branch-filter',
             'cashflow-branch-filter',
             'balance-branch-filter',
-            'closing-branch-filter'
+            'closing-branch-filter',
+            'closing-config-branch-filter',
+            'lock-period-branch-filter',
+            'invoices-branch-filter',
+            'vouchers-branch-filter'
         ].forEach(selectId => populateBranchSelect(selectId, true));
     }
 
@@ -1381,17 +1516,18 @@
     // ==========================================
     function addImportProduct() {
         const container = document.getElementById('import-products');
+        const materialProducts = products.filter(p => p.productType !== 'MON_AN');
         const productHtml = `
             <div class="bg-slate-800/50 p-4 rounded-lg grid grid-cols-12 gap-4 items-end product-row">
                 <div class="col-span-5">
                     <label class="block text-sm mb-2">Sản phẩm</label>
                     <select class="product-select w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" onchange="calculateImportTotals()">
-                        ${products.map(p => `<option value="${p.id}">${p.id} - ${p.name} (Tồn: ${p.quantity})</option>`).join('')}
+                        ${materialProducts.map(p => `<option value="${p.id}">${p.id} - ${p.name} (Tồn: ${p.quantity})</option>`).join('')}
                     </select>
                 </div>
                 <div class="col-span-2">
                     <label class="block text-sm mb-2">Số lượng</label>
-                    <input type="number" class="product-qty w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" value="1" min="1" onchange="calculateImportTotals()">
+                    <input type="number" class="product-qty w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500" value="1" min="0" step="0.001" onchange="calculateImportTotals()">
                 </div>
                 <div class="col-span-3">
                     <label class="block text-sm mb-2">Đơn giá (chưa VAT)</label>
@@ -1412,17 +1548,18 @@
 
     function addExportProduct() {
         const container = document.getElementById('export-products');
+        const materialProducts = products.filter(p => p.productType !== 'MON_AN');
         const productHtml = `
             <div class="bg-slate-800/50 p-4 rounded-lg grid grid-cols-12 gap-4 items-end product-row">
                 <div class="col-span-4">
                     <label class="block text-sm mb-2">Sản phẩm</label>
                     <select class="product-select w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 focus:outline-none focus:border-orange-500" onchange="calculateExportTotals()">
-                        ${products.map(p => `<option value="${p.id}">${p.id} - ${p.name} (Tồn: ${p.quantity})</option>`).join('')}
+                        ${materialProducts.map(p => `<option value="${p.id}">${p.id} - ${p.name} (Tồn: ${p.quantity})</option>`).join('')}
                     </select>
                 </div>
                 <div class="col-span-2">
                     <label class="block text-sm mb-2">Số lượng</label>
-                    <input type="number" class="product-qty w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 focus:outline-none focus:border-orange-500" value="1" min="1" onchange="calculateExportTotals()">
+                    <input type="number" class="product-qty w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 focus:outline-none focus:border-orange-500" value="1" min="0" step="0.001" onchange="calculateExportTotals()">
                 </div>
                 <div class="col-span-3">
                     <label class="block text-sm mb-2">Đơn giá bán (chưa VAT)</label>
@@ -1515,14 +1652,21 @@
     // ==========================================
     // TRANSACTION PROCESSING
     // ==========================================
-    function addTransaction(date, type, ref, desc, debitAccountId, creditAccountId, amount, branchId = getDefaultBranchId()) {
-        transactions.push({
+    function addTransaction(date, type, ref, desc, debitAccountId, creditAccountId, amount, branchId = getDefaultBranchId(), meta = null) {
+        const periodKey = getPeriodKeyFromDate(date);
+        const effectiveLock = getEffectiveLockedPeriodData(branchId, periodKey);
+        const txn = {
             id: `txn_${transactionIdCounter++}`,
             date, type, ref, desc,
             debitAccountId, creditAccountId,
             amount,
-            branchId
-        });
+            branchId,
+            isLocked: !!effectiveLock.isLocked
+        };
+        if (meta && typeof meta === 'object') {
+            Object.assign(txn, meta);
+        }
+        transactions.push(txn);
 
         // Update balances
         const debitAccount = accounts[debitAccountId];
@@ -1673,6 +1817,7 @@
         let totalRevenue = 0;
         let totalCOGS = 0;
         let totalVAT = 0;
+        let totalReceivable = 0;
         
         // Process each product
         rows.forEach(row => {
@@ -1691,6 +1836,7 @@
             totalRevenue += lineRevenue;
             totalCOGS += lineCOGS;
             totalVAT += lineVAT;
+            totalReceivable += (lineRevenue + lineVAT);
             
             stock.quantity -= qty;
             if (stock.quantity < 0) stock.quantity = 0;
@@ -1699,18 +1845,49 @@
             
             // Add COGS entry
             if (cogsDebitId && invCreditId) {
-                addTransaction(date, 'export', ref, `Xuất ${product.name}: ${qty} sp (Giá vốn)`, cogsDebitId, invCreditId, lineCOGS, branchId);
+                addTransaction(date, 'export', ref, `Xuất ${product.name}: ${qty} sp (Giá vốn)`, cogsDebitId, invCreditId, lineCOGS, branchId, {
+                    productId,
+                    exportLineType: 'cogs',
+                    qty,
+                    unitCost: stock.avgCost,
+                    partnerId: partnerId || null,
+                    partnerName: partner?.name || null,
+                    paymentMethod
+                });
             }
             
             // Add revenue entry
-            if (payDebitId && revCreditId) {
-                addTransaction(date, 'export', ref, `Doanh thu bán ${product.name}: ${qty} x ${formatCurrency(price)}${partner ? ` cho ${partner.name}` : ''}`, payDebitId, revCreditId, lineRevenue, branchId);
+            if (revCreditId) {
+                addTransaction(date, 'export', ref, `Doanh thu bán ${product.name}: ${qty} x ${formatCurrency(price)}${partner ? ` cho ${partner.name}` : ''}`, 'id_000', revCreditId, lineRevenue, branchId, {
+                    productId,
+                    exportLineType: 'revenue',
+                    qty,
+                    unitPrice: price,
+                    partnerId: partnerId || null,
+                    partnerName: partner?.name || null,
+                    paymentMethod
+                });
             }
         });
         
-        // Add VAT payable entry
-        if (totalVAT > 0 && payDebitId && vatCreditId) {
-            addTransaction(date, 'export', ref, `VAT bán ra ${ref}`, payDebitId, vatCreditId, totalVAT, branchId);
+        if (totalVAT > 0 && vatCreditId) {
+            addTransaction(date, 'export', ref, `VAT bán ra ${ref}`, 'id_000', vatCreditId, totalVAT, branchId, {
+                exportLineType: 'vat',
+                vatRate,
+                partnerId: partnerId || null,
+                partnerName: partner?.name || null,
+                paymentMethod
+            });
+        }
+
+        if (totalReceivable > 0 && payDebitId) {
+            addTransaction(date, 'export', ref, `Thu tiền/ghi nhận phải thu ${ref}${partner ? ` (${partner.name})` : ''}`, payDebitId, 'id_000', totalReceivable, branchId, {
+                exportLineType: 'payment',
+                vatRate,
+                partnerId: partnerId || null,
+                partnerName: partner?.name || null,
+                paymentMethod
+            });
         }
         
         syncGlobalProductsFromBranchStocks();
@@ -1725,6 +1902,276 @@
         calculateExportTotals();
         
         alert('Lưu phiếu xuất kho thành công!');
+        renderAll();
+    }
+
+    function addFnbOrderItem() {
+        const container = document.getElementById('fnb-items');
+        if (!container) return;
+        const dishes = products.filter(p => p.productType === 'MON_AN');
+        const rowHtml = `
+            <div class="bg-slate-800/50 p-4 rounded-lg grid grid-cols-12 gap-4 items-end fnb-item-row">
+                <div class="col-span-6">
+                    <label class="block text-sm mb-2">Món</label>
+                    <select class="fnb-dish-select w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 focus:outline-none focus:border-rose-500" onchange="calculateFnbOrderTotals()">
+                        ${dishes.map(p => `<option value="${p.id}">${p.id} - ${p.name}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-sm mb-2">Số lượng</label>
+                    <input type="number" class="fnb-qty w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 focus:outline-none focus:border-rose-500" value="1" min="0" step="0.001" onchange="calculateFnbOrderTotals()">
+                </div>
+                <div class="col-span-3">
+                    <label class="block text-sm mb-2">Đơn giá (chưa VAT)</label>
+                    <input type="number" class="fnb-price w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 focus:outline-none focus:border-rose-500" value="0" min="0" onchange="calculateFnbOrderTotals()">
+                </div>
+                <div class="col-span-1">
+                    <button type="button" onclick="removeFnbOrderItemRow(this)" class="bg-red-600/20 hover:bg-red-600/30 text-red-400 px-3 py-2.5 rounded-lg transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="col-span-12">
+                    <div class="fnb-recipe bg-slate-900/30 border border-slate-700/60 rounded-lg p-3 text-xs text-slate-300"></div>
+                </div>
+            </div>
+        `;
+        container.insertAdjacentHTML('beforeend', rowHtml);
+        calculateFnbOrderTotals();
+    }
+
+    function removeFnbOrderItemRow(btn) {
+        btn.closest('.fnb-item-row')?.remove();
+        calculateFnbOrderTotals();
+    }
+
+    function formatQty(qty) {
+        const s = Number(qty || 0).toFixed(3);
+        return s.replace(/\.?0+$/, '');
+    }
+
+    function calculateFnbOrderTotals() {
+        const container = document.getElementById('fnb-items');
+        if (!container) return;
+        const rows = container.querySelectorAll('.fnb-item-row');
+        const branchId = document.getElementById('fnb-branch')?.value || getDefaultBranchId();
+        let revenue = 0;
+
+        rows.forEach(row => {
+            const qty = parseFloat(row.querySelector('.fnb-qty')?.value) || 0;
+            const price = parseFloat(row.querySelector('.fnb-price')?.value) || 0;
+            revenue += qty * price;
+            updateFnbRecipeForRow(row, branchId);
+        });
+
+        const vatRate = (parseFloat(document.getElementById('fnb-vat')?.value) || 0) / 100;
+        const vat = revenue * vatRate;
+        const total = revenue + vat;
+
+        const revEl = document.getElementById('fnb-total-revenue');
+        const vatEl = document.getElementById('fnb-total-vat');
+        const payEl = document.getElementById('fnb-total-pay');
+        if (revEl) revEl.textContent = formatCurrency(revenue);
+        if (vatEl) vatEl.textContent = formatCurrency(vat);
+        if (payEl) payEl.textContent = formatCurrency(total);
+    }
+
+    function updateFnbRecipeForRow(row, branchId) {
+        const recipeEl = row.querySelector('.fnb-recipe');
+        if (!recipeEl) return;
+
+        const dishId = row.querySelector('.fnb-dish-select')?.value;
+        const qty = parseFloat(row.querySelector('.fnb-qty')?.value) || 0;
+        const dish = products.find(p => p.id === dishId);
+        if (!dish || dish.productType !== 'MON_AN') {
+            recipeEl.textContent = '';
+            return;
+        }
+
+        const recipe = Array.isArray(dish.recipe) ? dish.recipe : [];
+        if (recipe.length === 0) {
+            recipeEl.innerHTML = `<div class="text-amber-300">Món này chưa có công thức (recipe) nên không thể tính trừ kho nguyên liệu.</div>`;
+            return;
+        }
+
+        const lines = recipe.map(item => {
+            const materialId = item.materialId;
+            const requiredPerUnit = parseFloat(item.quantityRequired) || 0;
+            const requiredQty = qty * requiredPerUnit;
+            const material = products.find(p => p.id === materialId);
+            const stock = getBranchProductStock(branchId, materialId);
+            const enough = (stock.quantity || 0) + 1e-9 >= requiredQty;
+            const unitCost = stock.avgCost || 0;
+            const cost = requiredQty * unitCost;
+            const name = material ? material.name : materialId;
+            return `
+                <div class="flex items-center justify-between gap-3 ${enough ? 'text-slate-300' : 'text-red-300'}">
+                    <div class="truncate">
+                        <span class="font-mono text-slate-400">${materialId}</span>
+                        <span class="text-slate-200"> - ${name}</span>
+                    </div>
+                    <div class="font-mono whitespace-nowrap">
+                        ${formatQty(requiredPerUnit)} x ${formatQty(qty)} = <span class="text-slate-100">${formatQty(requiredQty)}</span>
+                        <span class="text-slate-500">|</span>
+                        Tồn: ${formatQty(stock.quantity || 0)}
+                        <span class="text-slate-500">|</span>
+                        Ước GV: ${formatCurrency(cost)}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        recipeEl.innerHTML = `
+            <div class="flex items-center justify-between mb-2">
+                <div class="font-semibold text-slate-200">Công thức (recipe)</div>
+                <div class="text-slate-500">Chi nhánh: <span class="font-mono">${branchId}</span></div>
+            </div>
+            <div class="space-y-1">${lines}</div>
+        `;
+    }
+
+    function saveFnbOrder(e) {
+        e.preventDefault();
+
+        const date = document.getElementById('fnb-date')?.value || getToday();
+        const branchId = document.getElementById('fnb-branch')?.value || getDefaultBranchId();
+        const partnerId = document.getElementById('fnb-partner')?.value || '';
+        const partner = getPartnerById(partnerId);
+        const paymentMethod = document.getElementById('fnb-payment')?.value || 'cash';
+        const vatRate = (parseFloat(document.getElementById('fnb-vat')?.value) || 0) / 100;
+
+        const container = document.getElementById('fnb-items');
+        const rows = container?.querySelectorAll('.fnb-item-row') || [];
+        if (rows.length === 0) {
+            alert('Vui lòng thêm ít nhất một món!');
+            return;
+        }
+
+        const requirements = new Map();
+        for (let row of rows) {
+            const dishId = row.querySelector('.fnb-dish-select')?.value;
+            const qty = parseFloat(row.querySelector('.fnb-qty')?.value) || 0;
+            const dish = products.find(p => p.id === dishId);
+            if (!dish || dish.productType !== 'MON_AN') continue;
+
+            const recipe = Array.isArray(dish.recipe) ? dish.recipe : [];
+            if (recipe.length === 0) {
+                alert(`Món "${dish.name}" chưa có công thức (recipe), không thể bán.`);
+                return;
+            }
+
+            recipe.forEach(item => {
+                const materialId = item.materialId;
+                const required = qty * (parseFloat(item.quantityRequired) || 0);
+                if (!materialId || required <= 0) return;
+                requirements.set(materialId, (requirements.get(materialId) || 0) + required);
+            });
+        }
+
+        for (let [materialId, requiredQty] of requirements.entries()) {
+            const material = products.find(p => p.id === materialId);
+            const stock = getBranchProductStock(branchId, materialId);
+            if ((stock.quantity || 0) + 1e-9 < requiredQty) {
+                alert(`Không thể làm món này do kho đã thiếu "${material ? material.name : materialId}". Cần: ${formatQty(requiredQty)} | Tồn: ${formatQty(stock.quantity || 0)}`);
+                return;
+            }
+        }
+
+        const ref = `DHF${String(fnbOrderCounter++).padStart(3, '0')}`;
+        const payDebitId = paymentMethod === 'cash' ? 'id_111' : paymentMethod === 'bank' ? 'id_112' : 'id_131';
+        const revCreditId = document.getElementById('fnb-credit-revenue')?.value || 'id_511';
+        const vatCreditId = document.getElementById('fnb-credit-vat')?.value || 'id_3331';
+        const cogsDebitId = document.getElementById('fnb-debit-cogs')?.value || 'id_632';
+        const materialCreditId = document.getElementById('fnb-credit-material')?.value || 'id_156';
+
+        let totalRevenue = 0;
+
+        rows.forEach(row => {
+            const dishId = row.querySelector('.fnb-dish-select')?.value;
+            const qty = parseFloat(row.querySelector('.fnb-qty')?.value) || 0;
+            const price = parseFloat(row.querySelector('.fnb-price')?.value) || 0;
+            const dish = products.find(p => p.id === dishId);
+            if (!dish || dish.productType !== 'MON_AN' || qty <= 0) return;
+
+            const lineRevenue = qty * price;
+            totalRevenue += lineRevenue;
+
+            addTransaction(date, 'fnb', ref, `Doanh thu bán ${dish.name}: ${formatQty(qty)} x ${formatCurrency(price)}${partner ? ` (${partner.name})` : ''}`, 'id_000', revCreditId, lineRevenue, branchId, {
+                productId: dishId,
+                exportLineType: 'revenue',
+                qty,
+                unitPrice: price,
+                partnerId: partnerId || null,
+                partnerName: partner?.name || null,
+                paymentMethod
+            });
+
+            const recipe = Array.isArray(dish.recipe) ? dish.recipe : [];
+            recipe.forEach(item => {
+                const materialId = item.materialId;
+                const requiredQty = qty * (parseFloat(item.quantityRequired) || 0);
+                if (!materialId || requiredQty <= 0) return;
+
+                const material = products.find(p => p.id === materialId);
+                const stock = getBranchProductStock(branchId, materialId);
+                const unitCost = stock.avgCost || 0;
+                const cost = requiredQty * unitCost;
+
+                stock.quantity = (stock.quantity || 0) - requiredQty;
+                if (stock.quantity < 0) stock.quantity = 0;
+                stock.totalValue = stock.quantity * (stock.avgCost || 0);
+                if (stock.quantity === 0) {
+                    stock.avgCost = 0;
+                    stock.totalValue = 0;
+                }
+
+                addTransaction(date, 'fnb', ref, `Giá vốn ${dish.name} - NVL ${material ? material.name : materialId}: ${formatQty(requiredQty)}`, cogsDebitId, materialCreditId, cost, branchId, {
+                    productId: materialId,
+                    exportLineType: 'cogs',
+                    qty: requiredQty,
+                    unitCost,
+                    fnbDishId: dishId,
+                    fnbDishName: dish.name,
+                    partnerId: partnerId || null,
+                    partnerName: partner?.name || null,
+                    paymentMethod
+                });
+            });
+        });
+
+        const totalVAT = totalRevenue * vatRate;
+        if (totalVAT > 0) {
+            addTransaction(date, 'fnb', ref, `VAT bán ra ${ref}`, 'id_000', vatCreditId, totalVAT, branchId, {
+                exportLineType: 'vat',
+                vatRate,
+                partnerId: partnerId || null,
+                partnerName: partner?.name || null,
+                paymentMethod
+            });
+        }
+
+        const totalPay = totalRevenue + totalVAT;
+        if (totalPay > 0) {
+            addTransaction(date, 'fnb', ref, `Thu tiền/ghi nhận phải thu ${ref}${partner ? ` (${partner.name})` : ''}`, payDebitId, 'id_000', totalPay, branchId, {
+                exportLineType: 'payment',
+                vatRate,
+                partnerId: partnerId || null,
+                partnerName: partner?.name || null,
+                paymentMethod
+            });
+        }
+
+        syncGlobalProductsFromBranchStocks();
+        updateInventoryAccount();
+
+        document.getElementById('form-fnb-order')?.reset();
+        const dateEl = document.getElementById('fnb-date');
+        if (dateEl) dateEl.value = getToday();
+        if (container) container.innerHTML = '';
+        addFnbOrderItem();
+
+        alert('Lưu đơn hàng FnB thành công!');
         renderAll();
     }
 
@@ -1791,6 +2238,256 @@
         renderAll();
     }
 
+    function isInterBranchTransferTransaction(txn) {
+        return txn?.type === 'interbranch';
+    }
+
+    function populateInterBranchTransferProductSelects() {
+        const container = document.getElementById('ibt-products');
+        if (!container) return;
+        const fromBranchId = document.getElementById('ibt-from-branch')?.value || getDefaultBranchId();
+        container.querySelectorAll('.ibt-product-select').forEach(select => {
+            const currentValue = select.value;
+            select.innerHTML = products.map(p => {
+                const stock = getBranchProductStock(fromBranchId, p.id);
+                return `<option value="${p.id}">${p.id} - ${p.name} (Tồn: ${stock.quantity})</option>`;
+            }).join('');
+            select.value = Array.from(select.options).some(option => option.value === currentValue)
+                ? currentValue
+                : (select.options[0]?.value || '');
+        });
+    }
+
+    function calculateInterBranchTransferGoodsTotals() {
+        const container = document.getElementById('ibt-products');
+        const totalEl = document.getElementById('ibt-goods-total');
+        if (!container) return;
+        const fromBranchId = document.getElementById('ibt-from-branch')?.value || getDefaultBranchId();
+
+        let total = 0;
+        container.querySelectorAll('.ibt-product-row').forEach(row => {
+            const productId = row.querySelector('.ibt-product-select')?.value;
+            const qty = parseFloat(row.querySelector('.ibt-product-qty')?.value) || 0;
+            const costInput = row.querySelector('.ibt-product-cost');
+            const lineTotalEl = row.querySelector('.ibt-line-total');
+
+            const stock = productId ? getBranchProductStock(fromBranchId, productId) : null;
+            const unitCost = stock ? (stock.avgCost || 0) : 0;
+            const lineTotal = qty * unitCost;
+
+            if (costInput) costInput.value = Math.round(unitCost);
+            if (lineTotalEl) lineTotalEl.textContent = formatCurrency(lineTotal);
+            total += lineTotal;
+        });
+
+        if (totalEl) totalEl.textContent = formatCurrency(total);
+    }
+
+    function addInterBranchTransferProduct() {
+        const container = document.getElementById('ibt-products');
+        if (!container) return;
+
+        const rowHtml = `
+            <div class="bg-slate-800/50 p-4 rounded-lg grid grid-cols-12 gap-4 items-end ibt-product-row">
+                <div class="col-span-5">
+                    <label class="block text-sm mb-2">Sản phẩm</label>
+                    <select class="ibt-product-select w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 focus:outline-none focus:border-fuchsia-500" onchange="calculateInterBranchTransferGoodsTotals()"></select>
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-sm mb-2">Số lượng</label>
+                    <input type="number" class="ibt-product-qty w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 focus:outline-none focus:border-fuchsia-500" value="1" min="1" onchange="calculateInterBranchTransferGoodsTotals()">
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-sm mb-2">Giá vốn</label>
+                    <input type="number" class="ibt-product-cost w-full bg-slate-700 border border-slate-700 rounded-lg px-3 py-2.5 focus:outline-none text-slate-400" value="0" readonly>
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-sm mb-2">Thành tiền</label>
+                    <div class="ibt-line-total w-full bg-slate-900/40 border border-slate-800 rounded-lg px-3 py-2.5 font-mono text-slate-200 text-right">0</div>
+                </div>
+                <div class="col-span-1">
+                    <button type="button" onclick="removeInterBranchTransferProductRow(this)" class="bg-red-600/20 hover:bg-red-600/30 text-red-400 px-3 py-2.5 rounded-lg transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        `;
+
+        container.insertAdjacentHTML('beforeend', rowHtml);
+        populateInterBranchTransferProductSelects();
+        calculateInterBranchTransferGoodsTotals();
+    }
+
+    function removeInterBranchTransferProductRow(btn) {
+        btn.closest('.ibt-product-row')?.remove();
+        calculateInterBranchTransferGoodsTotals();
+    }
+
+    function updateInterBranchTransferUI() {
+        const type = document.getElementById('ibt-type')?.value || 'money';
+        const moneyFields = document.getElementById('ibt-money-fields');
+        const goodsFields = document.getElementById('ibt-goods-fields');
+        if (moneyFields) moneyFields.classList.toggle('hidden', type !== 'money');
+        if (goodsFields) goodsFields.classList.toggle('hidden', type !== 'goods');
+        if (type === 'goods') {
+            const container = document.getElementById('ibt-products');
+            if (container && container.children.length === 0) {
+                addInterBranchTransferProduct();
+            } else {
+                populateInterBranchTransferProductSelects();
+                calculateInterBranchTransferGoodsTotals();
+            }
+        }
+    }
+
+    function saveInterBranchTransferVoucher(e) {
+        e.preventDefault();
+        const date = document.getElementById('ibt-date')?.value || getToday();
+        const fromBranchId = document.getElementById('ibt-from-branch')?.value || getDefaultBranchId();
+        const toBranchId = document.getElementById('ibt-to-branch')?.value || getDefaultBranchId();
+        const type = document.getElementById('ibt-type')?.value || 'money';
+        const note = (document.getElementById('ibt-note')?.value || '').trim();
+
+        if (!fromBranchId || !toBranchId) {
+            alert('Vui lòng chọn đầy đủ chi nhánh xuất và chi nhánh nhận!');
+            return;
+        }
+        if (fromBranchId === toBranchId) {
+            alert('Chi nhánh xuất và chi nhánh nhận phải khác nhau!');
+            return;
+        }
+
+        const ref = `DCNB${String(interBranchTransferCounter++).padStart(3, '0')}`;
+
+        const notePart = note ? ` - ${note}` : '';
+
+        if (type === 'money') {
+            const assetAccountId = document.getElementById('ibt-money-account')?.value || 'id_111';
+            const amount = parseFloat(document.getElementById('ibt-amount')?.value) || 0;
+            if (!amount || amount <= 0) {
+                alert('Vui lòng nhập số tiền hợp lệ!');
+                return;
+            }
+            const moneyAcc = accounts[assetAccountId];
+            const descDetail = `Tiền (${moneyAcc ? `${moneyAcc.code} - ${moneyAcc.name}` : assetAccountId})`;
+
+            addTransaction(
+                date,
+                'interbranch',
+                ref,
+                `Điều chuyển nội bộ xuất ${descDetail}${notePart}`,
+                'id_136',
+                assetAccountId,
+                amount,
+                fromBranchId
+            );
+
+            addTransaction(
+                date,
+                'interbranch',
+                ref,
+                `Điều chuyển nội bộ nhận ${descDetail}${notePart}`,
+                assetAccountId,
+                'id_336',
+                amount,
+                toBranchId
+            );
+        } else {
+            const container = document.getElementById('ibt-products');
+            const rows = container ? Array.from(container.querySelectorAll('.ibt-product-row')) : [];
+            if (rows.length === 0) {
+                alert('Vui lòng thêm ít nhất một mặt hàng!');
+                return;
+            }
+
+            for (const row of rows) {
+                const productId = row.querySelector('.ibt-product-select')?.value;
+                const qty = parseFloat(row.querySelector('.ibt-product-qty')?.value) || 0;
+                if (!productId) {
+                    alert('Vui lòng chọn sản phẩm!');
+                    return;
+                }
+                if (!qty || qty <= 0) {
+                    alert('Vui lòng nhập số lượng hợp lệ!');
+                    return;
+                }
+
+                const product = products.find(p => p.id === productId);
+                const fromStock = getBranchProductStock(fromBranchId, productId);
+                if (qty > fromStock.quantity) {
+                    alert(`Tồn kho chi nhánh xuất không đủ cho ${product ? product.name : productId}! (Tồn: ${fromStock.quantity})`);
+                    return;
+                }
+            }
+
+            rows.forEach(row => {
+                const productId = row.querySelector('.ibt-product-select')?.value;
+                const qty = parseFloat(row.querySelector('.ibt-product-qty')?.value) || 0;
+                const product = products.find(p => p.id === productId);
+
+                const fromStock = getBranchProductStock(fromBranchId, productId);
+                const unitCost = fromStock.avgCost || 0;
+                const amount = qty * unitCost;
+
+                fromStock.quantity -= qty;
+                if (fromStock.quantity < 0) fromStock.quantity = 0;
+                fromStock.totalValue = fromStock.quantity * (fromStock.avgCost || 0);
+                if (fromStock.quantity === 0) {
+                    fromStock.avgCost = 0;
+                    fromStock.totalValue = 0;
+                }
+
+                const toStock = getBranchProductStock(toBranchId, productId);
+                const oldQty = toStock.quantity;
+                const oldTotal = toStock.totalValue;
+                const newQty = oldQty + qty;
+                const newTotal = oldTotal + amount;
+                toStock.quantity = newQty;
+                toStock.totalValue = newTotal;
+                toStock.avgCost = newQty > 0 ? newTotal / newQty : 0;
+
+                const descDetail = `Hàng (${product ? `${product.id} - ${product.name}` : productId}): ${qty} sp`;
+
+                addTransaction(
+                    date,
+                    'interbranch',
+                    ref,
+                    `Điều chuyển nội bộ xuất ${descDetail}${notePart}`,
+                    'id_136',
+                    'id_156',
+                    amount,
+                    fromBranchId
+                );
+
+                addTransaction(
+                    date,
+                    'interbranch',
+                    ref,
+                    `Điều chuyển nội bộ nhận ${descDetail}${notePart}`,
+                    'id_156',
+                    'id_336',
+                    amount,
+                    toBranchId
+                );
+            });
+        }
+
+        syncGlobalProductsFromBranchStocks();
+        updateInventoryAccount();
+
+        document.getElementById('form-inter-branch-transfer')?.reset();
+        const goodsContainer = document.getElementById('ibt-products');
+        if (goodsContainer) goodsContainer.innerHTML = '';
+        const dateInput = document.getElementById('ibt-date');
+        if (dateInput) dateInput.value = getToday();
+        populateBranchSelects();
+        updateInterBranchTransferUI();
+        renderAll();
+        alert('Đã lưu phiếu điều chuyển nội bộ!');
+    }
+
     function populateClosingSourceSelect() {
         const select = document.getElementById('closing-source-account');
         if (!select) return;
@@ -1817,7 +2514,13 @@
 
         tbody.innerHTML = '';
 
-        closingRules.forEach(rule => {
+        const scope = getSelectedBranchId('closing-config-branch-filter');
+        const scopedBranchId = scope && scope !== 'all' ? scope : null;
+
+        const rulesToRender = scopedBranchId ? getEffectiveClosingRules(scopedBranchId) : closingRules.filter(rule => (rule.branchId === undefined ? null : rule.branchId) === null);
+
+        rulesToRender
+            .forEach(rule => {
             const tr = document.createElement('tr');
             tr.className = 'border-t border-slate-700 hover:bg-slate-800/30';
             tr.innerHTML = `
@@ -1834,16 +2537,35 @@
         });
     }
 
+    function getEffectiveClosingRules(branchId) {
+        const baseRules = closingRules.filter(rule => (rule.branchId === undefined ? null : rule.branchId) === null);
+        const branchRules = closingRules.filter(rule => (rule.branchId === undefined ? null : rule.branchId) === branchId);
+        const map = new Map();
+        baseRules.forEach(rule => {
+            map.set(`${rule.tai_khoan_nguon}|${rule.loai_ket_chuyen}`, rule);
+        });
+        branchRules.forEach(rule => {
+            map.set(`${rule.tai_khoan_nguon}|${rule.loai_ket_chuyen}`, rule);
+        });
+        return Array.from(map.values());
+    }
+
     function addClosingRule() {
         const sourceCode = document.getElementById('closing-source-account')?.value;
         const closingType = document.getElementById('closing-rule-type')?.value;
+        const scope = getSelectedBranchId('closing-config-branch-filter');
+        const scopedBranchId = scope && scope !== 'all' ? scope : null;
 
         if (!sourceCode || !closingType) {
             alert('Vui lòng chọn tài khoản nguồn và loại kết chuyển!');
             return;
         }
 
-        const duplicateRule = closingRules.find(rule => rule.tai_khoan_nguon === sourceCode && rule.loai_ket_chuyen === closingType);
+        const duplicateRule = closingRules.find(rule =>
+            rule.tai_khoan_nguon === sourceCode &&
+            rule.loai_ket_chuyen === closingType &&
+            (rule.branchId === undefined ? null : rule.branchId) === scopedBranchId
+        );
         if (duplicateRule) {
             alert('Quy tắc này đã tồn tại!');
             return;
@@ -1857,7 +2579,8 @@
             ten_quy_tac: `Kết chuyển ${sourceLabel}`,
             tai_khoan_nguon: sourceCode,
             tai_khoan_dich: "911",
-            loai_ket_chuyen: closingType
+            loai_ket_chuyen: closingType,
+            branchId: scopedBranchId
         });
 
         renderClosingRules();
@@ -1910,7 +2633,8 @@
                 }
             });
 
-        closingRules.forEach(rule => {
+        const effectiveClosingRules = getEffectiveClosingRules(branchId);
+        effectiveClosingRules.forEach(rule => {
             const targetAccount = getAccountByCode(rule.tai_khoan_dich);
             if (!targetAccount) return;
 
@@ -2033,10 +2757,15 @@
             profit += result.profit;
         });
 
-        const closingKey = `${new Date(date).getFullYear()}-${String(new Date(date).getMonth() + 1).padStart(2, '0')}`;
-        const closingPeriod = lockedPeriods[closingKey] || { isLocked: false, isClosed: false };
-        closingPeriod.isClosed = true;
-        lockedPeriods[closingKey] = closingPeriod;
+        const closingKey = getPeriodKeyFromDate(date);
+        branchIds.forEach(branchId => {
+            const closingPeriod = getLockedPeriodDataByBranch(branchId, closingKey);
+            closingPeriod.isClosed = true;
+        });
+        if (selectedBranchId === 'all') {
+            const closingPeriod = getLockedPeriodDataByBranch('all', closingKey);
+            closingPeriod.isClosed = true;
+        }
 
         document.getElementById('closing-revenue').textContent = formatCurrency(totalRevenue);
         document.getElementById('closing-expense').textContent = formatCurrency(totalExpenses);
@@ -2127,6 +2856,29 @@
         if (filter && filter.value !== 'all') {
             filteredTransactions = filteredTransactions.filter(t => t.type === filter.value);
         }
+
+        const refFilterKey = `${appStorageKey}_journal_ref_filter_v1`;
+        const refFilter = localStorage.getItem(refFilterKey);
+        if (refFilter) {
+            filteredTransactions = filteredTransactions.filter(t => t.ref === refFilter);
+
+            const controls = document.querySelector('#module-journal .flex.gap-3') || document.querySelector('#module-journal .flex.flex-wrap.gap-3');
+            if (controls && !document.getElementById('journal-ref-filter-pill')) {
+                const pill = document.createElement('button');
+                pill.id = 'journal-ref-filter-pill';
+                pill.type = 'button';
+                pill.className = 'inline-flex items-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm font-semibold text-emerald-200 hover:bg-emerald-500/20';
+                pill.innerHTML = `<span class="font-mono">${refFilter}</span><span class="text-emerald-300/80">✕</span>`;
+                pill.addEventListener('click', () => {
+                    localStorage.removeItem(refFilterKey);
+                    pill.remove();
+                    renderJournal();
+                });
+                controls.appendChild(pill);
+            }
+        } else {
+            document.getElementById('journal-ref-filter-pill')?.remove();
+        }
         
         filteredTransactions.forEach(txn => {
             const debitAcc = getDisplayAccount(txn.debitAccountId) || accounts[txn.debitAccountId];
@@ -2138,9 +2890,15 @@
             if (txn.type === 'pay') { typeColor = 'text-red-400'; typeLabel = 'Phiếu chi'; }
             if (txn.type === 'import') { typeColor = 'text-blue-400'; typeLabel = 'Nhập kho'; }
             if (txn.type === 'export') { typeColor = 'text-orange-400'; typeLabel = 'Xuất kho'; }
+            if (txn.type === 'fnb') { typeColor = 'text-rose-400'; typeLabel = 'Đơn FnB'; }
             if (txn.type === 'depreciation') { typeColor = 'text-yellow-400'; typeLabel = 'Khấu hao'; }
             if (txn.type === 'closing') { typeColor = 'text-cyan-400'; typeLabel = 'Kết chuyển'; }
             if (txn.type === 'internal') { typeColor = 'text-purple-400'; typeLabel = 'Điều chỉnh'; }
+            if (txn.type === 'interbranch') { typeColor = 'text-fuchsia-400'; typeLabel = 'Điều chuyển'; }
+
+            const productHint = txn.productId
+                ? `<span class="ml-2 inline-flex items-center rounded bg-slate-700/60 px-2 py-0.5 text-xs font-mono text-slate-200">${txn.productId}</span>`
+                : '';
 
             const branchHint = branchId === 'all'
                 ? `<div class="mt-1 text-xs text-cyan-400">${getBranchLabelById(txn.branchId)}</div>`
@@ -2149,15 +2907,293 @@
             tbody.insertAdjacentHTML('beforeend', `
                 <tr class="border-t border-slate-800 hover:bg-slate-800/30">
                     <td class="p-4 text-slate-300">${txn.date}</td>
-                    <td class="p-4 font-mono text-slate-400">${txn.ref}</td>
+                    <td class="p-4 font-mono text-slate-400">
+                        <button type="button" class="font-mono text-slate-300 hover:text-cyan-300 underline underline-offset-2" onclick="openVoucherDetail('${txn.ref}')">${txn.ref}</button>
+                    </td>
                     <td class="p-4 ${typeColor} font-medium">${typeLabel}</td>
-                    <td class="p-4 text-slate-300">${txn.desc}${branchHint}</td>
+                    <td class="p-4 text-slate-300">${txn.desc}${productHint}${branchHint}</td>
                     <td class="p-4 font-mono text-green-400">${debitAcc ? `${debitAcc.code} - ${debitAcc.name}` : ''}</td>
                     <td class="p-4 font-mono text-red-400">${creditAcc ? `${creditAcc.code} - ${creditAcc.name}` : ''}</td>
                     <td class="p-4 text-right font-mono text-slate-200">${formatCurrency(txn.amount)}</td>
                 </tr>
             `);
         });
+    }
+
+    function openJournalForRef(ref) {
+        const refFilterKey = `${appStorageKey}_journal_ref_filter_v1`;
+        localStorage.setItem(refFilterKey, ref);
+        showModule('journal');
+    }
+
+    function renderInvoices() {
+        const tbody = document.getElementById('invoices-table');
+        if (!tbody) return;
+
+        const branchId = getSelectedBranchId('invoices-branch-filter');
+        const txns = getTransactionsByBranch(branchId).filter(t => t.type === 'export' && typeof t.ref === 'string' && t.ref.startsWith('PXK'));
+        const groups = new Map();
+        txns.forEach(txn => {
+            if (!groups.has(txn.ref)) groups.set(txn.ref, []);
+            groups.get(txn.ref).push(txn);
+        });
+
+        const rows = Array.from(groups.entries()).map(([ref, list]) => {
+            list.sort((a, b) => String(a.id).localeCompare(String(b.id)));
+            const first = list[0];
+            const branchLabel = getBranchLabelById(first.branchId);
+
+            const revenueTxns = list.filter(t => t.exportLineType === 'revenue' || (accounts[t.creditAccountId]?.code || '').startsWith('511'));
+            const vatTxns = list.filter(t => t.exportLineType === 'vat' || (accounts[t.creditAccountId]?.code || '') === '3331');
+            const paymentTxn = list.find(t => t.exportLineType === 'payment') || list.find(t => (accounts[t.debitAccountId]?.code || '') === '111' || (accounts[t.debitAccountId]?.code || '') === '112' || (accounts[t.debitAccountId]?.code || '') === '131');
+
+            const revenue = revenueTxns.reduce((sum, t) => sum + (t.amount || 0), 0);
+            const vat = vatTxns.reduce((sum, t) => sum + (t.amount || 0), 0);
+            const total = paymentTxn?.amount || (revenue + vat);
+
+            const qtySum = revenueTxns.reduce((sum, t) => sum + (typeof t.qty === 'number' ? t.qty : 0), 0);
+            const lineCount = revenueTxns.length;
+
+            const partnerName = paymentTxn?.partnerName || revenueTxns.find(t => t.partnerName)?.partnerName || '';
+            const paymentAcc = paymentTxn ? (getDisplayAccount(paymentTxn.debitAccountId) || accounts[paymentTxn.debitAccountId]) : null;
+
+            return {
+                ref,
+                date: first.date,
+                branchId: first.branchId,
+                branchLabel,
+                partnerName,
+                lineCount,
+                qtySum,
+                revenue,
+                vat,
+                total,
+                paymentLabel: paymentAcc ? `${paymentAcc.code}` : ''
+            };
+        });
+
+        rows.sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(b.ref).localeCompare(String(a.ref)));
+
+        tbody.innerHTML = rows.map(inv => `
+            <tr class="border-t border-slate-800 hover:bg-slate-800/30">
+                <td class="p-4 text-slate-200 font-mono">${inv.ref}</td>
+                <td class="p-4 text-slate-300">${inv.date}</td>
+                <td class="p-4 text-slate-300">${branchId === 'all' ? inv.branchLabel : ''}</td>
+                <td class="p-4 text-slate-200">${inv.partnerName || ''}</td>
+                <td class="p-4 text-right font-mono text-slate-200">${inv.qtySum > 0 ? inv.qtySum : inv.lineCount}</td>
+                <td class="p-4 text-right font-mono text-slate-200">${formatCurrency(inv.revenue)}</td>
+                <td class="p-4 text-right font-mono text-slate-200">${formatCurrency(inv.vat)}</td>
+                <td class="p-4 text-right font-mono text-emerald-300">${formatCurrency(inv.total)}</td>
+                <td class="p-4 text-center">
+                    <button type="button" class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-700/50" onclick="openJournalForRef('${inv.ref}')">
+                        Xem nhật ký
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function getVoucherTypeMeta(type) {
+        const meta = { label: type, colorClass: 'text-slate-400' };
+        if (type === 'receive') return { label: 'Phiếu thu', colorClass: 'text-green-400' };
+        if (type === 'pay') return { label: 'Phiếu chi', colorClass: 'text-red-400' };
+        if (type === 'import') return { label: 'Nhập kho', colorClass: 'text-blue-400' };
+        if (type === 'export') return { label: 'Xuất kho', colorClass: 'text-orange-400' };
+        if (type === 'fnb') return { label: 'Đơn FnB', colorClass: 'text-rose-400' };
+        if (type === 'interbranch') return { label: 'Điều chuyển', colorClass: 'text-fuchsia-400' };
+        if (type === 'internal') return { label: 'Điều chỉnh', colorClass: 'text-purple-400' };
+        if (type === 'closing') return { label: 'Kết chuyển', colorClass: 'text-cyan-400' };
+        if (type === 'depreciation') return { label: 'Khấu hao', colorClass: 'text-yellow-400' };
+        return meta;
+    }
+
+    function ensureVoucherDetailModal() {
+        let modal = document.getElementById('voucher-detail-modal');
+        if (modal) return modal;
+
+        modal = document.createElement('div');
+        modal.id = 'voucher-detail-modal';
+        modal.className = 'fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4';
+        modal.innerHTML = `
+            <div class="glassmorphism w-full max-w-5xl rounded-2xl border border-slate-700">
+                <div class="flex items-start justify-between gap-3 border-b border-slate-700 p-6">
+                    <div>
+                        <div class="text-sm text-slate-400" id="voucher-detail-subtitle"></div>
+                        <div class="mt-1 text-2xl font-bold text-slate-100" id="voucher-detail-title"></div>
+                    </div>
+                    <button type="button" class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-700/50" data-role="close-voucher-detail">
+                        Đóng
+                    </button>
+                </div>
+                <div class="p-6">
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-slate-800">
+                                <tr>
+                                    <th class="text-left p-3 font-semibold">Chi nhánh</th>
+                                    <th class="text-left p-3 font-semibold">Diễn giải</th>
+                                    <th class="text-left p-3 font-semibold">TK Nợ</th>
+                                    <th class="text-left p-3 font-semibold">TK Có</th>
+                                    <th class="text-right p-3 font-semibold">Số tiền</th>
+                                </tr>
+                            </thead>
+                            <tbody id="voucher-detail-lines"></tbody>
+                        </table>
+                    </div>
+                    <div class="mt-5 flex flex-wrap items-center justify-end gap-3">
+                        <button type="button" class="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-200 hover:bg-emerald-500/20" data-role="open-journal">
+                            Xem trong Nhật ký
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        });
+        modal.querySelector('[data-role="close-voucher-detail"]')?.addEventListener('click', () => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        });
+        return modal;
+    }
+
+    function openVoucherDetail(ref) {
+        const modal = ensureVoucherDetailModal();
+        const titleEl = modal.querySelector('#voucher-detail-title');
+        const subtitleEl = modal.querySelector('#voucher-detail-subtitle');
+        const tbody = modal.querySelector('#voucher-detail-lines');
+
+        const list = transactions.filter(t => t.ref === ref);
+        if (list.length === 0) return;
+
+        list.sort((a, b) => String(a.date).localeCompare(String(b.date)) || String(a.id).localeCompare(String(b.id)));
+        const first = list[0];
+        const meta = getVoucherTypeMeta(first.type);
+
+        const branchIds = Array.from(new Set(list.map(t => t.branchId))).filter(Boolean);
+        const branchLabel = branchIds.length === 1 ? getBranchLabelById(branchIds[0]) : (branchIds.length > 1 ? 'Nhiều chi nhánh' : '');
+
+        if (subtitleEl) subtitleEl.textContent = `${meta.label}${branchLabel ? ` • ${branchLabel}` : ''} • ${first.date}`;
+        if (titleEl) titleEl.textContent = ref;
+
+        if (tbody) {
+            tbody.innerHTML = list.map(txn => {
+                const debitAcc = getDisplayAccount(txn.debitAccountId) || accounts[txn.debitAccountId];
+                const creditAcc = getDisplayAccount(txn.creditAccountId) || accounts[txn.creditAccountId];
+                const productHint = txn.productId
+                    ? `<span class="ml-2 inline-flex items-center rounded bg-slate-700/60 px-2 py-0.5 text-xs font-mono text-slate-200">${txn.productId}</span>`
+                    : '';
+                return `
+                    <tr class="border-t border-slate-800 hover:bg-slate-800/30">
+                        <td class="p-3 text-slate-300">${getBranchLabelById(txn.branchId)}</td>
+                        <td class="p-3 text-slate-200">${txn.desc}${productHint}</td>
+                        <td class="p-3 font-mono text-green-400">${debitAcc ? `${debitAcc.code} - ${debitAcc.name}` : ''}</td>
+                        <td class="p-3 font-mono text-red-400">${creditAcc ? `${creditAcc.code} - ${creditAcc.name}` : ''}</td>
+                        <td class="p-3 text-right font-mono text-slate-200">${formatCurrency(txn.amount)}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        modal.querySelector('[data-role="open-journal"]')?.addEventListener('click', () => openJournalForRef(ref), { once: true });
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function getVoucherTotalByType(type, list) {
+        const maxAmount = list.reduce((m, t) => Math.max(m, t.amount || 0), 0);
+        if (type === 'export' || type === 'fnb') {
+            const paymentTxn = list.find(t => t.exportLineType === 'payment') || list.find(t => ['111', '112', '131'].includes(accounts[t.debitAccountId]?.code || ''));
+            return paymentTxn?.amount || maxAmount;
+        }
+        if (type === 'receive' || type === 'pay') {
+            return maxAmount;
+        }
+        if (type === 'import') {
+            const payCredits = list.filter(t => ['111', '112', '331'].includes(accounts[t.creditAccountId]?.code || ''));
+            const total = payCredits.reduce((sum, t) => sum + (t.amount || 0), 0);
+            return total > 0 ? total : maxAmount;
+        }
+        if (type === 'interbranch') {
+            const ar = list.filter(t => (accounts[t.debitAccountId]?.code || '') === '136');
+            if (ar.length > 0) return ar.reduce((sum, t) => sum + (t.amount || 0), 0);
+            const ap = list.filter(t => (accounts[t.creditAccountId]?.code || '') === '336');
+            if (ap.length > 0) return ap.reduce((sum, t) => sum + (t.amount || 0), 0);
+            return maxAmount;
+        }
+        return maxAmount;
+    }
+
+    function renderVouchers() {
+        const tbody = document.getElementById('vouchers-table');
+        if (!tbody) return;
+
+        const branchId = getSelectedBranchId('vouchers-branch-filter');
+        const typeFilter = document.getElementById('vouchers-type-filter')?.value || 'all';
+        const keyword = (document.getElementById('vouchers-keyword')?.value || '').trim().toLowerCase();
+
+        let txns = getTransactionsByBranch(branchId).filter(t => !!t.ref);
+        if (typeFilter !== 'all') {
+            txns = txns.filter(t => t.type === typeFilter);
+        }
+
+        const groups = new Map();
+        txns.forEach(txn => {
+            if (!groups.has(txn.ref)) groups.set(txn.ref, []);
+            groups.get(txn.ref).push(txn);
+        });
+
+        const rows = Array.from(groups.entries()).map(([ref, list]) => {
+            list.sort((a, b) => String(a.date).localeCompare(String(b.date)) || String(a.id).localeCompare(String(b.id)));
+            const first = list[0];
+            const meta = getVoucherTypeMeta(first.type);
+            const branchIds = Array.from(new Set(list.map(t => t.branchId))).filter(Boolean);
+            const branchLabel = branchIds.length === 1 ? getBranchLabelById(branchIds[0]) : (branchIds.length > 1 ? 'Nhiều CN' : '');
+            const partnerName = list.find(t => t.partnerName)?.partnerName || '';
+            const total = getVoucherTotalByType(first.type, list);
+            return {
+                ref,
+                date: first.date,
+                type: first.type,
+                typeLabel: meta.label,
+                typeColor: meta.colorClass,
+                branchLabel,
+                partnerName,
+                lines: list.length,
+                total
+            };
+        });
+
+        const filteredRows = rows.filter(r => {
+            if (!keyword) return true;
+            return `${r.ref} ${r.typeLabel} ${r.branchLabel} ${r.partnerName}`.toLowerCase().includes(keyword);
+        });
+
+        filteredRows.sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(b.ref).localeCompare(String(a.ref)));
+
+        tbody.innerHTML = filteredRows.map(v => `
+            <tr class="border-t border-slate-800 hover:bg-slate-800/30">
+                <td class="p-4 font-mono text-slate-200">${v.ref}</td>
+                <td class="p-4 text-slate-300">${v.date}</td>
+                <td class="p-4 ${v.typeColor} font-semibold">${v.typeLabel}</td>
+                <td class="p-4 text-slate-300">${branchId === 'all' ? v.branchLabel : ''}</td>
+                <td class="p-4 text-slate-200">${v.partnerName || ''}</td>
+                <td class="p-4 text-right font-mono text-slate-200">${formatCurrency(v.total)}</td>
+                <td class="p-4 text-right font-mono text-slate-400">${v.lines}</td>
+                <td class="p-4 text-center">
+                    <button type="button" class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-700/50" onclick="openVoucherDetail('${v.ref}')">
+                        Xem chi tiết
+                    </button>
+                </td>
+            </tr>
+        `).join('');
     }
 
     function renderLedger() {
@@ -2215,32 +3251,123 @@
         
         let totalAssets = 0;
         let totalLiabilities = 0;
-        
         assetsDiv.innerHTML = '';
         liabilitiesDiv.innerHTML = '';
-        
-        rootAccounts.forEach(account => {
-            const balance = branchId === 'all' ? getAccountBalance(account.id) : getAccountBalanceByBranch(account.id, branchId);
-            
-            if (account.type === 'Tài sản') {
-                totalAssets += balance;
-                assetsDiv.insertAdjacentHTML('beforeend', `
-                    <div class="flex justify-between items-center py-2 border-b border-slate-800">
-                        <span class="text-slate-300"><span class="font-mono text-sm text-slate-500 mr-2">${account.code}</span>${account.name}</span>
-                        <span class="font-mono text-slate-200">${formatCurrency(balance)}</span>
-                    </div>
-                `);
-            } else {
-                totalLiabilities += balance;
-                liabilitiesDiv.insertAdjacentHTML('beforeend', `
-                    <div class="flex justify-between items-center py-2 border-b border-slate-800">
-                        <span class="text-slate-300"><span class="font-mono text-sm text-slate-500 mr-2">${account.code}</span>${account.name}</span>
-                        <span class="font-mono text-slate-200">${formatCurrency(-balance)}</span>
-                    </div>
-                `);
-            }
-        });
-        
+
+        if (branchId === 'all') {
+            const branchIds = branches.map(b => b.id);
+            const totalAssetsByBranch = branchIds.map(() => 0);
+            const totalLiabilitiesByBranch = branchIds.map(() => 0);
+
+            const headerCols = branchIds.map(id => `<th class="text-right p-3 font-semibold text-slate-300">${id}</th>`).join('');
+
+            let assetsRows = '';
+            let liabilitiesRows = '';
+
+            rootAccounts.forEach(account => {
+                const isAsset = account.type === 'Tài sản';
+                const balancesByBranch = branchIds.map(id => getAccountBalanceByBranch(account.id, id));
+                let totalBalance = getAccountBalance(account.id);
+                if (account.code === '136' || account.code === '336') {
+                    totalBalance = 0;
+                }
+
+                const hasAny = balancesByBranch.some(v => Math.abs(v) > 0.0001) || Math.abs(totalBalance) > 0.0001;
+                if (!hasAny) return;
+
+                balancesByBranch.forEach((v, idx) => {
+                    if (isAsset) totalAssetsByBranch[idx] += v;
+                    else totalLiabilitiesByBranch[idx] += v;
+                });
+
+                if (isAsset) totalAssets += totalBalance;
+                else totalLiabilities += totalBalance;
+
+                const cols = balancesByBranch.map(v => `<td class="p-3 text-right font-mono ${isAsset ? 'text-slate-200' : 'text-slate-200'}">${isAsset ? formatCurrency(v) : formatCurrency(-v)}</td>`).join('');
+                const totalCol = `<td class="p-3 text-right font-mono font-semibold text-cyan-200">${isAsset ? formatCurrency(totalBalance) : formatCurrency(-totalBalance)}</td>`;
+
+                const rowHtml = `
+                    <tr class="border-t border-slate-800 hover:bg-slate-800/30">
+                        <td class="p-3 text-slate-300"><span class="font-mono text-xs text-slate-500 mr-2">${account.code}</span>${account.name}</td>
+                        ${cols}
+                        ${totalCol}
+                    </tr>
+                `;
+
+                if (isAsset) assetsRows += rowHtml;
+                else liabilitiesRows += rowHtml;
+            });
+
+            const totalsColsAssets = totalAssetsByBranch.map(v => `<td class="p-3 text-right font-mono font-bold text-slate-100">${formatCurrency(v)}</td>`).join('');
+            const totalsColsLiab = totalLiabilitiesByBranch.map(v => `<td class="p-3 text-right font-mono font-bold text-slate-100">${formatCurrency(-v)}</td>`).join('');
+
+            assetsDiv.innerHTML = `
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-slate-800/60">
+                            <tr>
+                                <th class="text-left p-3 font-semibold text-slate-300">Chỉ tiêu</th>
+                                ${headerCols}
+                                <th class="text-right p-3 font-semibold text-cyan-200">Tổng</th>
+                            </tr>
+                        </thead>
+                        <tbody>${assetsRows}</tbody>
+                        <tfoot class="border-t border-slate-700 bg-slate-900/40">
+                            <tr>
+                                <td class="p-3 font-semibold text-slate-200">Tổng tài sản</td>
+                                ${totalsColsAssets}
+                                <td class="p-3 text-right font-mono font-bold text-cyan-200">${formatCurrency(totalAssets)}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            `;
+
+            liabilitiesDiv.innerHTML = `
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-slate-800/60">
+                            <tr>
+                                <th class="text-left p-3 font-semibold text-slate-300">Chỉ tiêu</th>
+                                ${headerCols}
+                                <th class="text-right p-3 font-semibold text-cyan-200">Tổng</th>
+                            </tr>
+                        </thead>
+                        <tbody>${liabilitiesRows}</tbody>
+                        <tfoot class="border-t border-slate-700 bg-slate-900/40">
+                            <tr>
+                                <td class="p-3 font-semibold text-slate-200">Tổng nguồn vốn</td>
+                                ${totalsColsLiab}
+                                <td class="p-3 text-right font-mono font-bold text-cyan-200">${formatCurrency(-totalLiabilities)}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            `;
+        } else {
+            rootAccounts.forEach(account => {
+                const balance = getAccountBalanceByBranch(account.id, branchId);
+
+                if (account.type === 'Tài sản') {
+                    totalAssets += balance;
+                    assetsDiv.insertAdjacentHTML('beforeend', `
+                        <div class="flex justify-between items-center py-2 border-b border-slate-800">
+                            <span class="text-slate-300"><span class="font-mono text-sm text-slate-500 mr-2">${account.code}</span>${account.name}</span>
+                            <span class="font-mono text-slate-200">${formatCurrency(balance)}</span>
+                        </div>
+                    `);
+                } else {
+                    totalLiabilities += balance;
+                    liabilitiesDiv.insertAdjacentHTML('beforeend', `
+                        <div class="flex justify-between items-center py-2 border-b border-slate-800">
+                            <span class="text-slate-300"><span class="font-mono text-sm text-slate-500 mr-2">${account.code}</span>${account.name}</span>
+                            <span class="font-mono text-slate-200">${formatCurrency(-balance)}</span>
+                        </div>
+                    `);
+                }
+            });
+        }
+
         document.getElementById('total-assets').textContent = formatCurrency(totalAssets);
         document.getElementById('total-liabilities').textContent = formatCurrency(-totalLiabilities);
         
@@ -2319,7 +3446,7 @@
         tbody.innerHTML = '';
 
         const stockMap = branchId === 'all' ? null : (productStocksByBranch[branchId] || {});
-        products.forEach(p => {
+        products.filter(p => p.productType !== 'MON_AN').forEach(p => {
             const qty = stockMap ? (stockMap[p.id]?.quantity || 0) : p.quantity;
             const avgCost = stockMap ? (stockMap[p.id]?.avgCost || 0) : p.avgCost;
             const totalValue = stockMap ? (stockMap[p.id]?.totalValue || 0) : p.totalValue;
@@ -2410,6 +3537,7 @@
         cashFlowTable.innerHTML = '';
 
         getTransactionsByBranch(branchId).forEach(txn => {
+            if (branchId === 'all' && isInterBranchTransferTransaction(txn)) return;
             let inAmount = 0;
             let outAmount = 0;
             
@@ -2430,6 +3558,7 @@
                 if (txn.type === 'import') { typeColor = 'text-blue-400'; typeLabel = 'Nhập kho'; }
                 if (txn.type === 'export') { typeColor = 'text-orange-400'; typeLabel = 'Xuất kho'; }
                 if (txn.type === 'closing') { typeColor = 'text-cyan-400'; typeLabel = 'Kết chuyển'; }
+                if (txn.type === 'interbranch') { typeColor = 'text-fuchsia-400'; typeLabel = 'Điều chuyển'; }
 
                 const branchHint = branchId === 'all'
                     ? `<div class="mt-1 text-xs text-cyan-400">${getBranchLabelById(txn.branchId)}</div>`
@@ -2461,7 +3590,8 @@
             'pay-debit', 'pay-credit', 'ledger-account',
             'import-debit-inventory', 'import-debit-vat', 'import-credit-pay',
             'export-debit-cogs', 'export-credit-inventory', 'export-debit-pay',
-            'export-credit-revenue', 'export-credit-vat'
+            'export-credit-revenue', 'export-credit-vat',
+            'fnb-credit-revenue', 'fnb-credit-vat', 'fnb-debit-cogs', 'fnb-credit-material'
         ];
         
         const branchContextMap = {
@@ -2477,6 +3607,10 @@
             'export-debit-pay': 'export-branch',
             'export-credit-revenue': 'export-branch',
             'export-credit-vat': 'export-branch',
+            'fnb-credit-revenue': 'fnb-branch',
+            'fnb-credit-vat': 'fnb-branch',
+            'fnb-debit-cogs': 'fnb-branch',
+            'fnb-credit-material': 'fnb-branch',
             'ledger-account': 'ledger-branch-filter'
         };
 
@@ -2554,6 +3688,18 @@
         
         const exportVatCredit = document.getElementById('export-credit-vat');
         if (exportVatCredit) exportVatCredit.value = 'id_3331';
+
+        const fnbRevCredit = document.getElementById('fnb-credit-revenue');
+        if (fnbRevCredit) fnbRevCredit.value = 'id_511';
+
+        const fnbVatCredit = document.getElementById('fnb-credit-vat');
+        if (fnbVatCredit) fnbVatCredit.value = 'id_3331';
+
+        const fnbCogsDebit = document.getElementById('fnb-debit-cogs');
+        if (fnbCogsDebit) fnbCogsDebit.value = 'id_632';
+
+        const fnbMaterialCredit = document.getElementById('fnb-credit-material');
+        if (fnbMaterialCredit) fnbMaterialCredit.value = 'id_156';
     }
 
     // ==========================================
@@ -2696,10 +3842,11 @@
 
         tbody.innerHTML = '';
         const currentYear = new Date().getFullYear();
+        const scope = getSelectedBranchId('lock-period-branch-filter') || getDefaultBranchId();
         
         for (let month = 1; month <= 12; month++) {
             const key = `${currentYear}-${String(month).padStart(2, '0')}`;
-            const periodData = lockedPeriods[key] || { isLocked: false, isClosed: false };
+            const periodData = getEffectiveLockedPeriodData(scope, key);
 
             const tr = document.createElement('tr');
             tr.className = "border-t border-slate-700 hover:bg-slate-800/30";
@@ -2724,46 +3871,68 @@
         const month = parseInt(document.getElementById('lock-month').value);
         const year = parseInt(document.getElementById('lock-year').value);
         const key = `${year}-${String(month).padStart(2, '0')}`;
+        const scope = getSelectedBranchId('lock-period-branch-filter') || getDefaultBranchId();
+        const branchIds = scope === 'all' ? branches.map(b => b.id) : [scope];
         
         // Check if closed
-        const periodData = lockedPeriods[key] || { isLocked: false, isClosed: false };
-        // For now, we'll just lock it, but in real app we'd check if closing was done
-        periodData.isLocked = true;
-        lockedPeriods[key] = periodData;
+        const notClosedBranches = branchIds.filter(branchId => !getEffectiveLockedPeriodData(branchId, key).isClosed);
+        if (notClosedBranches.length > 0) {
+            alert(`Chưa kết chuyển nên chưa thể khóa sổ: ${notClosedBranches.map(id => getBranchLabelById(id)).join(', ')}`);
+            return;
+        }
+        branchIds.forEach(branchId => {
+            const periodData = getLockedPeriodDataByBranch(branchId, key);
+            periodData.isLocked = true;
+        });
+        if (scope === 'all') {
+            const periodData = getLockedPeriodDataByBranch('all', key);
+            periodData.isLocked = true;
+        }
 
         // Lock all transactions in that period
         transactions.forEach(txn => {
             const txnDate = new Date(txn.date);
             if (txnDate.getFullYear() === year && txnDate.getMonth() + 1 === month) {
-                txn.isLocked = true;
+                if (scope === 'all' || txn.branchId === scope) {
+                    txn.isLocked = true;
+                }
             }
         });
 
         renderLockPeriodTable();
         renderAll();
-        alert(`Đã khóa sổ Tháng ${month}/${year}!`);
+        alert(`Đã khóa sổ ${scope === 'all' ? 'Toàn công ty' : getBranchLabelById(scope)} Tháng ${month}/${year}!`);
     }
 
     function unlockPeriod() {
         const month = parseInt(document.getElementById('lock-month').value);
         const year = parseInt(document.getElementById('lock-year').value);
         const key = `${year}-${String(month).padStart(2, '0')}`;
+        const scope = getSelectedBranchId('lock-period-branch-filter') || getDefaultBranchId();
+        const branchIds = scope === 'all' ? branches.map(b => b.id) : [scope];
         
-        const periodData = lockedPeriods[key] || { isLocked: false, isClosed: false };
-        periodData.isLocked = false;
-        lockedPeriods[key] = periodData;
+        branchIds.forEach(branchId => {
+            const periodData = getLockedPeriodDataByBranch(branchId, key);
+            periodData.isLocked = false;
+        });
+        if (scope === 'all') {
+            const periodData = getLockedPeriodDataByBranch('all', key);
+            periodData.isLocked = false;
+        }
 
         // Unlock all transactions in that period
         transactions.forEach(txn => {
             const txnDate = new Date(txn.date);
             if (txnDate.getFullYear() === year && txnDate.getMonth() + 1 === month) {
-                txn.isLocked = false;
+                if (scope === 'all' || txn.branchId === scope) {
+                    txn.isLocked = false;
+                }
             }
         });
 
         renderLockPeriodTable();
         renderAll();
-        alert(`Đã mở khóa sổ Tháng ${month}/${year}!`);
+        alert(`Đã mở khóa sổ ${scope === 'all' ? 'Toàn công ty' : getBranchLabelById(scope)} Tháng ${month}/${year}!`);
     }
 
     const modulePageMap = {
@@ -2776,6 +3945,10 @@
         'voucher-pay': 'voucher-pay.html',
         'voucher-import': 'voucher-import.html',
         'voucher-export': 'voucher-export.html',
+        'fnb-orders': 'fnb-orders.html',
+        'inter-branch-transfer': 'inter-branch-transfer.html',
+        'invoices': 'invoices.html',
+        'vouchers': 'vouchers.html',
         'receivables-payables': 'receivables-payables.html',
         'cash-flow': 'cash-flow.html',
         'journal': 'journal.html',
@@ -2820,11 +3993,21 @@
                 { heading: 'Cho người mới', items: ['Tài khoản trả lời câu hỏi “giao dịch làm thay đổi cái gì”. Chi nhánh trả lời câu hỏi “giao dịch đó thuộc đơn vị nào”.', 'Muốn tách sổ chi nhánh đúng, điều quan trọng nhất là <strong>đừng quên chọn chi nhánh khi lập phiếu</strong> và phải thống nhất quy ước vận hành (kho, tiền, công nợ thuộc chi nhánh nào).'] }
             ]
         },
+        'inter-branch-transfer': {
+            title: 'Phiếu điều chuyển nội bộ',
+            overview: 'Dùng khi chuyển tiền hoặc chuyển hàng giữa các chi nhánh. Mỗi chi nhánh sẽ ghi một bút toán riêng để báo cáo chi nhánh không bị sai.',
+            sections: [
+                { heading: 'Nguyên tắc kế toán (cốt lõi)', items: ['Khi chuyển nội bộ, về mặt “toàn công ty” không làm tăng/giảm tài sản với bên ngoài, nhưng từng chi nhánh thì có tăng/giảm.', 'Vì vậy hệ thống dùng cặp tài khoản nội bộ: <code>136</code> (phải thu nội bộ) và <code>336</code> (phải trả nội bộ) để hai bên ghi nhận đối ứng đúng bản chất.'] },
+                { heading: 'Tại chi nhánh xuất (nguồn)', items: ['Nếu chuyển <strong>tiền</strong>: chi nhánh xuất bị giảm tiền nên ghi <code>Có 111/112</code>. Đồng thời ghi <code>Nợ 136</code> để thể hiện “chi nhánh khác đang nợ lại chi nhánh này”.', 'Nếu chuyển <strong>hàng</strong>: chi nhánh xuất bị giảm tồn kho nguyên vật liệu/hàng hóa nên ghi <code>Có 152</code>. Đồng thời ghi <code>Nợ 136</code>.'] },
+                { heading: 'Tại chi nhánh nhận (đích)', items: ['Nếu nhận <strong>tiền</strong>: chi nhánh nhận tăng tiền nên ghi <code>Nợ 111/112</code>. Đồng thời ghi <code>Có 336</code> để thể hiện “chi nhánh này đang nợ nội bộ”.', 'Nếu nhận <strong>hàng</strong>: chi nhánh nhận tăng tồn kho nguyên vật liệu/hàng hóa nên ghi <code>Nợ 152</code> và đối ứng <code>Có 336</code>.'] },
+                { heading: 'Khi xem Toàn công ty (hợp nhất)', items: ['Hai tài khoản <code>136</code> và <code>336</code> sẽ bị triệt tiêu (elimination) vì chỉ là công nợ nội bộ.', 'Báo cáo dòng tiền hợp nhất sẽ loại giao dịch điều chuyển để không bị phình to ảo (vì nội bộ vừa chi ra ở nơi này vừa thu vào ở nơi khác).'] }
+            ]
+        },
         'inventory': {
             title: 'Quản lý kho',
             overview: 'Trang này cho biết doanh nghiệp đang còn bao nhiêu hàng và số hàng đó đang được quy đổi thành bao nhiêu tiền trong kế toán.',
             sections: [
-                { heading: 'Bản chất nghiệp vụ', items: ['Kho không chỉ là số lượng, mà còn là tài sản của doanh nghiệp.', 'Vì vậy hàng hóa đang nằm trong kho được phản ánh vào tài khoản <code>156</code>.'] },
+                { heading: 'Bản chất nghiệp vụ', items: ['Kho không chỉ là số lượng, mà còn là tài sản của doanh nghiệp.', 'Vì vậy nguyên vật liệu/hàng hóa đang nằm trong kho được phản ánh vào tài khoản <code>152</code>.'] },
                 { heading: 'Vì sao tồn kho liên quan đến kế toán', items: ['Mua hàng về mà chưa bán thì chưa phải chi phí ngay, vì hàng đó vẫn còn là tài sản.', 'Chỉ khi xuất bán, một phần giá trị từ kho mới được chuyển thành <code>Giá vốn</code> ở <code>632</code>.'] },
                 { heading: 'Cho người mới', items: ['Nếu kho còn nhiều mà tiền ít, nghĩa là tiền đã chuyển hóa thành hàng tồn.', 'Nếu bán hàng mà quên xuất kho, doanh thu có thể tăng nhưng giá vốn không tăng, khiến lãi bị “ảo”.'] }
             ]
@@ -2863,8 +4046,8 @@
             title: 'Phiếu nhập kho',
             overview: 'Phiếu nhập kho ghi nhận việc mua hàng về. Người mới thường nhầm là “mua hàng = chi phí”, nhưng thực ra nếu hàng còn nằm trong kho thì đó vẫn là tài sản.',
             sections: [
-                { heading: 'Cặp định khoản thường gặp', items: ['Nhập hàng chưa thanh toán: <code>Nợ 156 / Nợ 133 / Có 331</code>.', 'Nhập hàng thanh toán ngay bằng tiền: <code>Nợ 156 / Nợ 133 / Có 111 hoặc 112</code>.'] },
-                { heading: 'Vì sao phải dùng cặp đó', items: ['<code>156</code> là hàng hóa. Mua hàng về làm tài sản hàng hóa tăng nên ghi <code>Nợ 156</code>.', '<code>133</code> là thuế GTGT đầu vào được khấu trừ. Nếu hóa đơn mua hàng có VAT hợp lệ, doanh nghiệp có quyền khấu trừ phần thuế này, nên ghi <code>Nợ 133</code>.', 'Nếu chưa trả tiền cho nhà cung cấp thì nghĩa là doanh nghiệp đang mắc nợ họ, nên ghi <code>Có 331</code>.', 'Nếu trả tiền ngay thì không phát sinh nợ phải trả, thay vào đó tiền giảm nên ghi <code>Có 111</code> hoặc <code>Có 112</code>.'] },
+                { heading: 'Cặp định khoản thường gặp', items: ['Nhập hàng chưa thanh toán: <code>Nợ 152 / Nợ 133 / Có 331</code>.', 'Nhập hàng thanh toán ngay bằng tiền: <code>Nợ 152 / Nợ 133 / Có 111 hoặc 112</code>.'] },
+                { heading: 'Vì sao phải dùng cặp đó', items: ['<code>152</code> là nguyên vật liệu/hàng hóa trong kho. Mua về làm tài sản kho tăng nên ghi <code>Nợ 152</code>.', '<code>133</code> là thuế GTGT đầu vào được khấu trừ. Nếu hóa đơn mua hàng có VAT hợp lệ, doanh nghiệp có quyền khấu trừ phần thuế này, nên ghi <code>Nợ 133</code>.', 'Nếu chưa trả tiền cho nhà cung cấp thì nghĩa là doanh nghiệp đang mắc nợ họ, nên ghi <code>Có 331</code>.', 'Nếu trả tiền ngay thì không phát sinh nợ phải trả, thay vào đó tiền giảm nên ghi <code>Có 111</code> hoặc <code>Có 112</code>.'] },
                 { heading: 'Giải thích kiểu đời thường', items: ['Bạn đổi tiền hoặc đổi “một lời hứa sẽ trả tiền sau” để lấy hàng hóa đưa vào kho.', 'Vì thế một bên tăng là hàng trong kho, bên còn lại hoặc là nợ nhà cung cấp, hoặc là tiền đã chi ra.'] },
                 { heading: 'Sai lầm người mới hay gặp', items: ['Ghi mua hàng vào <code>642</code> ngay, làm chi phí tăng quá sớm.', 'Bỏ qua <code>133</code> nên cuối kỳ không khấu trừ được VAT đầu vào.'] }
             ]
@@ -2873,10 +4056,21 @@
             title: 'Phiếu xuất kho',
             overview: 'Phiếu xuất kho là nghiệp vụ khó hơn vì một lần bán hàng thường sinh ra 2 bản chất khác nhau: vừa bán được hàng, vừa làm mất đi một phần hàng trong kho.',
             sections: [
-                { heading: 'Hai cặp định khoản thường đi cùng nhau', items: ['Ghi nhận doanh thu: <code>Nợ 111, 112 hoặc 131 / Có 511 / Có 3331</code>.', 'Ghi nhận giá vốn: <code>Nợ 632 / Có 156</code>.'] },
+                { heading: 'Hai cặp định khoản thường đi cùng nhau', items: ['Ghi nhận doanh thu: <code>Nợ 111, 112 hoặc 131 / Có 511 / Có 3331</code>.', 'Ghi nhận giá vốn: <code>Nợ 632 / Có 152</code>.'] },
                 { heading: 'Vì sao phải tách làm 2 bút toán', items: ['Bút toán doanh thu trả lời câu hỏi: “Doanh nghiệp đã thu được quyền nhận bao nhiêu tiền từ khách?”', 'Bút toán giá vốn trả lời câu hỏi: “Để có doanh thu đó, doanh nghiệp đã xuất bao nhiêu giá trị hàng ra khỏi kho?”', 'Nếu chỉ ghi doanh thu mà không ghi giá vốn thì lợi nhuận sẽ bị cao giả tạo.'] },
-                { heading: 'Vì sao dùng đúng các tài khoản đó', items: ['Khách trả tiền ngay thì tiền tăng, nên ghi <code>Nợ 111</code> hoặc <code>Nợ 112</code>. Nếu bán chịu, doanh nghiệp có quyền đòi tiền khách nên ghi <code>Nợ 131</code>.', 'Doanh thu bán hàng tăng nên ghi <code>Có 511</code>.', 'VAT đầu ra là khoản doanh nghiệp thu hộ Nhà nước, không phải doanh thu thật của doanh nghiệp, nên ghi riêng vào <code>Có 3331</code>.', 'Hàng trong kho giảm khi xuất bán nên ghi <code>Có 156</code>. Phần giá trị của hàng đã bán trở thành chi phí giá vốn nên ghi <code>Nợ 632</code>.'] },
+                { heading: 'Vì sao dùng đúng các tài khoản đó', items: ['Khách trả tiền ngay thì tiền tăng, nên ghi <code>Nợ 111</code> hoặc <code>Nợ 112</code>. Nếu bán chịu, doanh nghiệp có quyền đòi tiền khách nên ghi <code>Nợ 131</code>.', 'Doanh thu bán hàng tăng nên ghi <code>Có 511</code>.', 'VAT đầu ra là khoản doanh nghiệp thu hộ Nhà nước, không phải doanh thu thật của doanh nghiệp, nên ghi riêng vào <code>Có 3331</code>.', 'Tồn kho nguyên vật liệu/hàng hóa giảm khi xuất bán nên ghi <code>Có 152</code>. Phần giá trị của kho đã tiêu hao để bán trở thành chi phí giá vốn nên ghi <code>Nợ 632</code>.'] },
                 { heading: 'Cho người mới', items: ['Hãy nhớ: bán hàng không chỉ là “tiền vào”, mà còn là “hàng ra”.', 'Doanh thu cho biết bán được bao nhiêu, còn giá vốn cho biết đã hy sinh bao nhiêu hàng để tạo ra doanh thu đó.'] }
+            ]
+        },
+        'fnb-orders': {
+            title: 'Đơn hàng FnB (bán theo công thức)',
+            overview: 'Dùng khi bán món ăn/đồ uống (MON_AN). Món không có tồn kho riêng, giá vốn được tính động bằng cách trừ kho nguyên liệu (NGUYEN_LIEU) theo định mức (recipe).',
+            sections: [
+                { heading: 'Ý tưởng cốt lõi (dễ hiểu)', items: ['Trong FnB, bạn không “xuất kho 1 ly cafe sữa” theo nghĩa kho có sẵn ly cafe sữa.', 'Thực tế bạn xuất kho <strong>nguyên liệu</strong> (hạt cafe, sữa đặc, đường...) để “tạo ra” món.', 'Vì vậy hệ thống lưu công thức <code>recipe</code> cho từng món và trừ kho nguyên liệu theo công thức đó.'] },
+                { heading: 'Cấu trúc dữ liệu', items: ['<strong>NGUYÊN LIỆU</strong> có tồn kho theo chi nhánh và có <code>avgCost</code> (giá bình quân gia quyền).', '<strong>MÓN ĂN</strong> có <code>recipe: [{ materialId, quantityRequired }]</code> và không có tồn kho trực tiếp.'] },
+                { heading: 'Hạch toán khi lưu đơn hàng', items: ['(1) <strong>Doanh thu theo từng món</strong>: mỗi món sinh 1 dòng <code>Nợ 000 / Có 511</code> theo số lượng x đơn giá (chưa VAT).', '(2) <strong>Giá vốn theo từng nguyên liệu</strong>: hệ thống duyệt recipe của món và sinh các dòng <code>Nợ 632 / Có 152</code> theo lượng tiêu hao x giá bình quân nguyên liệu tại chi nhánh.', '(3) <strong>VAT và Thu tiền</strong>: gom cuối đơn: <code>Nợ 000 / Có 3331</code> (VAT) và <code>Nợ 111/112/131 / Có 000</code> (tổng thanh toán).'] },
+                { heading: 'Vì sao cần “chặn thiếu kho”', items: ['Nếu thiếu bất kỳ nguyên liệu nào, thực tế bạn không thể làm món đó.', 'Nếu vẫn cho bán, báo cáo kho sẽ âm và giá vốn/lợi nhuận sẽ sai.', 'Vì vậy hệ thống sẽ kiểm tra tồn kho nguyên liệu trước khi ghi nhận đơn hàng.'] },
+                { heading: 'Gắn chi nhánh', items: ['Mỗi đơn hàng có chi nhánh. Kho nguyên liệu, giá vốn và bút toán phát sinh đều gắn <code>branchId</code> để xem lãi/lỗ và kho theo từng chi nhánh.'] }
             ]
         },
         'receivables-payables': {
@@ -3084,6 +4278,211 @@
         accountsButton.insertAdjacentElement('afterend', button);
     }
 
+    function ensureInterBranchTransferSidebarNav() {
+        if (document.getElementById('nav-inter-branch-transfer')) return;
+
+        const anchor = document.getElementById('nav-voucher-export') || document.getElementById('nav-voucher-import') || document.getElementById('nav-voucher-pay') || document.getElementById('nav-voucher-receive');
+        const nav = anchor?.closest('nav');
+        if (!nav) return;
+
+        const button = document.createElement('button');
+        button.id = 'nav-inter-branch-transfer';
+        button.className = 'nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3';
+        button.setAttribute('onclick', "showModule('inter-branch-transfer')");
+        button.innerHTML = `
+            <svg class="w-5 h-5 text-fuchsia-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"/>
+            </svg>
+            <span>Điều chuyển nội bộ</span>
+        `;
+
+        if (anchor) {
+            anchor.insertAdjacentElement('afterend', button);
+        } else {
+            nav.appendChild(button);
+        }
+    }
+
+    function ensureInvoicesSidebarNav() {
+        if (document.getElementById('nav-invoices')) return;
+
+        const anchor = document.getElementById('nav-receivables-payables') || document.getElementById('nav-cash-flow');
+        const nav = anchor?.closest('nav');
+        if (!nav) return;
+
+        const button = document.createElement('button');
+        button.id = 'nav-invoices';
+        button.className = 'nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3';
+        button.setAttribute('onclick', "showModule('invoices')");
+        button.innerHTML = `
+            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            <span>Hóa đơn bán hàng</span>
+        `;
+
+        if (anchor) {
+            anchor.insertAdjacentElement('afterend', button);
+        } else {
+            nav.appendChild(button);
+        }
+    }
+
+    function ensureStandardSidebar() {
+        const sidebar = document.querySelector('aside');
+        if (!sidebar || sidebar.dataset.standardized === '1') return;
+
+        sidebar.dataset.standardized = '1';
+        sidebar.className = 'w-64 glassmorphism border-r border-slate-700 flex flex-col';
+        sidebar.innerHTML = `
+            <div class="p-6 border-b border-slate-700">
+                <h1 class="text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                    Kế Toán Dễ Dàng
+                </h1>
+                <p class="text-xs text-slate-400 mt-1">Dành cho người mới</p>
+            </div>
+            <nav class="flex-1 p-4 space-y-2 overflow-auto">
+                <button onclick="showModule('dashboard')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-dashboard">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 011 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                    </svg>
+                    <span>Tổng quan</span>
+                </button>
+                <button onclick="showModule('accounts')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-accounts">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <span>Hệ thống tài khoản</span>
+                </button>
+                <button onclick="showModule('branches')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-branches">
+                    <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5V4H2v16h5m10 0v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4m10 0H7m5-12a2 2 0 100-4 2 2 0 000 4z"/>
+                    </svg>
+                    <span>Chi nhánh</span>
+                </button>
+                <button onclick="showModule('inventory')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-inventory">
+                    <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                    <span>Quản lý kho</span>
+                </button>
+                <button onclick="showModule('fixed-assets')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-fixed-assets">
+                    <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2v10m0 0a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2m-3 0h6m-6 0h6a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2v10a2 2 0 002 2h2a2 2 0 002-2"/>
+                    </svg>
+                    <span>Tài sản cố định</span>
+                </button>
+
+                <div class="pt-4 pb-2 px-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">Lập phiếu</div>
+                <button onclick="showModule('voucher-receive')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-voucher-receive">
+                    <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    <span>Phiếu Thu</span>
+                </button>
+                <button onclick="showModule('voucher-pay')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-voucher-pay">
+                    <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/>
+                    </svg>
+                    <span>Phiếu Chi</span>
+                </button>
+                <button onclick="showModule('voucher-import')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-voucher-import">
+                    <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                    <span>Phiếu Nhập Kho</span>
+                </button>
+                <button onclick="showModule('voucher-export')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-voucher-export">
+                    <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                    <span>Phiếu Xuất Kho</span>
+                </button>
+                <button onclick="showModule('fnb-orders')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-fnb-orders">
+                    <svg class="w-5 h-5 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h18l-1 9H4L3 3zm3 18a1 1 0 100-2 1 1 0 000 2zm12 0a1 1 0 100-2 1 1 0 000 2zM5 12l-1 7h16l-1-7"/>
+                    </svg>
+                    <span>Đơn hàng FnB</span>
+                </button>
+                <button onclick="showModule('inter-branch-transfer')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-inter-branch-transfer">
+                    <svg class="w-5 h-5 text-fuchsia-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"/>
+                    </svg>
+                    <span>Điều chuyển nội bộ</span>
+                </button>
+
+                <div class="pt-4 pb-2 px-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">Báo cáo</div>
+                <button onclick="showModule('invoices')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-invoices">
+                    <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <span>Hóa đơn bán hàng</span>
+                </button>
+                <button onclick="showModule('vouchers')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-vouchers">
+                    <svg class="w-5 h-5 text-slate-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4h10a2 2 0 012 2v14l-3-2-3 2-3-2-3 2V6a2 2 0 012-2z"/>
+                    </svg>
+                    <span>Danh sách phiếu</span>
+                </button>
+                <button onclick="showModule('receivables-payables')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-receivables-payables">
+                    <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                    <span>Công nợ</span>
+                </button>
+                <button onclick="showModule('cash-flow')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-cash-flow">
+                    <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                    </svg>
+                    <span>Dòng tiền</span>
+                </button>
+                <button onclick="showModule('journal')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-journal">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                    </svg>
+                    <span>Sổ Nhật Ký</span>
+                </button>
+                <button onclick="showModule('ledger')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-ledger">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012-2v2M7 7h10"/>
+                    </svg>
+                    <span>Sổ Chi Tiết</span>
+                </button>
+                <button onclick="showModule('closing')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-closing">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2-2v6a2 2 0 002 2h2a2 2 0 012-2v10m-6 0a2 2 0 002 2h2a2 2 0 012-2m0 0V5a2 2 0 012-2h2a2 2 0 012-2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                    <span>Kết chuyển cuối kỳ</span>
+                </button>
+                <button onclick="showModule('closing-config')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-closing-config">
+                    <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317a1 1 0 011.35-.936l1.874.75a1 1 0 00.742 0l1.874-.75a1 1 0 011.35.936l.137 2.014a1 1 0 00.29.626l1.425 1.425a1 1 0 010 1.414l-1.425 1.425a1 1 0 00-.29.626l-.137 2.014a1 1 0 01-1.35.936l-1.874-.75a1 1 0 00-.742 0l-1.874.75a1 1 0 01-1.35-.936l-.137-2.014a1 1 0 00-.29-.626L3.54 9.61a1 1 0 010-1.414l1.425-1.425a1 1 0 00.29-.626l.137-2.014z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15a3 3 0 100-6 3 3 0 000 6z"/>
+                    </svg>
+                    <span>Cấu hình kết chuyển</span>
+                </button>
+                <button onclick="showModule('opening-balance')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-opening-balance">
+                    <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0v-6m0 0l6 3m-6-3l-6 3m6-3V4m0 14a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                    <span>Cài đặt số dư đầu kỳ</span>
+                </button>
+                <button onclick="showModule('lock-period')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-lock-period">
+                    <svg class="w-5 h-5 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                    </svg>
+                    <span>Khóa sổ</span>
+                </button>
+                <button onclick="showModule('balance')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-balance">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/>
+                    </svg>
+                    <span>Bảng Cân Đối</span>
+                </button>
+            </nav>
+        `;
+    }
+
     function ensureBranchField(formId, selectId, accentClass = 'focus:border-cyan-500') {
         const form = document.getElementById(formId);
         if (!form || document.getElementById(selectId)) return;
@@ -3148,7 +4547,10 @@
     }
 
     function initBranchUI() {
+        ensureStandardSidebar();
         ensureBranchSidebarNav();
+        ensureInterBranchTransferSidebarNav();
+        ensureInvoicesSidebarNav();
         ensureBranchField('form-receive', 'recv-branch', 'focus:border-green-500');
         ensureBranchField('form-pay', 'pay-branch', 'focus:border-red-500');
         ensureBranchField('form-import', 'import-branch', 'focus:border-blue-500');
@@ -3159,10 +4561,14 @@
         ensureFilterRow('module-dashboard', 'dashboard-branch-filter', 'Phạm vi số liệu', 'renderDashboard()');
         ensureFilterRow('module-accounts', 'accounts-branch-filter', 'Xem số dư theo chi nhánh', 'renderAccountTree()');
         ensureFilterRow('module-inventory', 'inventory-branch-filter', 'Xem tồn kho theo chi nhánh', 'renderInventory()');
+        ensureFilterRow('module-invoices', 'invoices-branch-filter', 'Phạm vi hóa đơn', 'renderInvoices()');
+        ensureFilterRow('module-vouchers', 'vouchers-branch-filter', 'Phạm vi phiếu', 'renderVouchers()');
         ensureFilterRow('module-receivables-payables', 'receivables-branch-filter', 'Phạm vi công nợ', 'renderReceivablesPayables()');
         ensureFilterRow('module-cash-flow', 'cashflow-branch-filter', 'Phạm vi dòng tiền', 'renderCashFlow()');
         ensureFilterRow('module-balance', 'balance-branch-filter', 'Phạm vi cân đối', 'renderBalanceSheet()');
         ensureFilterRow('module-closing', 'closing-branch-filter', 'Phạm vi kết chuyển', '');
+        ensureFilterRow('module-closing-config', 'closing-config-branch-filter', 'Phạm vi cấu hình kết chuyển', 'renderClosingRules()');
+        ensureFilterRow('module-lock-period', 'lock-period-branch-filter', 'Phạm vi khóa sổ', 'renderLockPeriodTable()');
     }
 
     function showModule(moduleName) {
@@ -3185,11 +4591,21 @@
             renderOpeningBalance();
         }
         if (moduleName === 'lock-period') {
+            populateBranchSelects();
             renderLockPeriodTable();
         }
         if (moduleName === 'closing-config') {
+            populateBranchSelects();
             populateClosingSourceSelect();
             renderClosingRules();
+        }
+        if (moduleName === 'invoices') {
+            populateBranchSelects();
+            renderInvoices();
+        }
+        if (moduleName === 'vouchers') {
+            populateBranchSelects();
+            renderVouchers();
         }
         if (moduleName === 'voucher-import') {
             const importProducts = document.getElementById('import-products');
@@ -3202,6 +4618,18 @@
             if (exportProducts && exportProducts.children.length === 0) {
                 addExportProduct();
             }
+        }
+        if (moduleName === 'fnb-orders') {
+            const dateEl = document.getElementById('fnb-date');
+            if (dateEl) dateEl.value = getToday();
+            populateBranchSelects();
+            populatePartnerSelects();
+            populateAccountSelects();
+            const items = document.getElementById('fnb-items');
+            if (items && items.children.length === 0) {
+                addFnbOrderItem();
+            }
+            calculateFnbOrderTotals();
         }
         if (moduleName === 'voucher-receive') {
             const recvDate = document.getElementById('recv-date');
@@ -3218,6 +4646,12 @@
         }
         if (moduleName === 'cash-flow') {
             renderCashFlow();
+        }
+        if (moduleName === 'inter-branch-transfer') {
+            const ibtDate = document.getElementById('ibt-date');
+            if (ibtDate) ibtDate.value = getToday();
+            populateBranchSelects();
+            updateInterBranchTransferUI();
         }
         if (moduleName === 'fixed-assets') {
             renderFixedAssets();
@@ -3239,6 +4673,8 @@
         renderFixedAssets();
         renderReceivablesPayables();
         renderCashFlow();
+        renderInvoices();
+        renderVouchers();
         populateAccountSelects();
         populateBranchSelects();
         populateClosingSourceSelect();
@@ -3290,6 +4726,8 @@
         document.getElementById('form-pay')?.addEventListener('submit', savePayVoucher);
         document.getElementById('form-import')?.addEventListener('submit', saveImportVoucher);
         document.getElementById('form-export')?.addEventListener('submit', saveExportVoucher);
+        document.getElementById('form-fnb-order')?.addEventListener('submit', saveFnbOrder);
+        document.getElementById('form-inter-branch-transfer')?.addEventListener('submit', saveInterBranchTransferVoucher);
 
         // Auto fill amount and update preview event listeners - Phiếu Thu
         document.getElementById('recv-loai-thu')?.addEventListener('change', updateRecvExplanation);
@@ -3313,6 +4751,18 @@
         document.getElementById('export-payment')?.addEventListener('change', () => {
             populateAccountSelects();
             updateExportPreview();
+        });
+
+        document.getElementById('fnb-branch')?.addEventListener('change', () => {
+            populateAccountSelects();
+            calculateFnbOrderTotals();
+        });
+        document.getElementById('fnb-vat')?.addEventListener('input', calculateFnbOrderTotals);
+
+        document.getElementById('ibt-type')?.addEventListener('change', updateInterBranchTransferUI);
+        document.getElementById('ibt-from-branch')?.addEventListener('change', () => {
+            populateInterBranchTransferProductSelects();
+            calculateInterBranchTransferGoodsTotals();
         });
 
         document.getElementById('recv-branch')?.addEventListener('change', () => {
