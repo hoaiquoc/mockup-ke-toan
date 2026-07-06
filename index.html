@@ -1113,7 +1113,7 @@
                     </svg>
                 </div>
                 <h3 class="text-xl font-semibold mb-2">Xử lý kết chuyển cuối kỳ</h3>
-                <p class="text-slate-400 mb-6">Hệ thống sẽ tự động khấu hao tài sản, chạy toàn bộ quy tắc kết chuyển động rồi mới xác định lãi/lỗ từ TK 911 sang TK 421</p>
+                <p class="text-slate-400 mb-6">Hệ thống sẽ khấu trừ VAT cuối kỳ, khấu hao tài sản, kết chuyển doanh thu chi phí, tính thuế TNDN rồi mới xác định lãi/lỗ từ TK 911 sang TK 421</p>
                 <button onclick="executeClosing()" class="bg-blue-600 hover:bg-blue-700 px-8 py-3 rounded-lg font-medium transition-all">
                     Thực hiện kết chuyển
                 </button>
@@ -1124,7 +1124,7 @@
                             <p class="text-2xl font-bold text-emerald-400" id="closing-revenue">0</p>
                         </div>
                         <div class="bg-slate-800 p-4 rounded-lg">
-                            <p class="text-slate-400 text-sm">Tổng Chi Phí (bao gồm khấu hao)</p>
+                            <p class="text-slate-400 text-sm">Tổng Chi Phí (bao gồm khấu hao và thuế TNDN)</p>
                             <p class="text-2xl font-bold text-red-400" id="closing-expense">0</p>
                         </div>
                         <div class="bg-slate-800 p-4 rounded-lg">
@@ -1428,11 +1428,15 @@
         "id_331": { id: "id_331", code: "331", name: "Phải trả người bán", type: "Nợ phải trả", balance: -20000000, parentId: null, isParent: false, children: [], defaultChildId: null },
         "id_334": { id: "id_334", code: "334", name: "Phải trả người lao động", type: "Nợ phải trả", balance: 0, parentId: null, isParent: false, children: [], defaultChildId: null },
         "id_3331": { id: "id_3331", code: "3331", name: "Thuế GTGT phải nộp", type: "Nợ phải trả", balance: 0, parentId: null, isParent: false, children: [], defaultChildId: null },
+        "id_3334": { id: "id_3334", code: "3334", name: "Thuế TNDN phải nộp", type: "Nợ phải trả", balance: 0, parentId: null, isParent: false, children: [], defaultChildId: null },
         "id_411": { id: "id_411", code: "411", name: "Vốn chủ sở hữu", type: "Vốn chủ sở hữu", balance: -50000000, parentId: null, isParent: false, children: [], defaultChildId: null },
         "id_421": { id: "id_421", code: "421", name: "Lợi nhuận", type: "Vốn chủ sở hữu", balance: 0, parentId: null, isParent: false, children: [], defaultChildId: null },
+        "id_711": { id: "id_711", code: "711", name: "Thu nhập khác", type: "Doanh thu", balance: 0, parentId: null, isParent: false, children: [], defaultChildId: null },
         "id_511": { id: "id_511", code: "511", name: "Doanh thu bán hàng", type: "Doanh thu", balance: 0, parentId: null, isParent: false, children: [], defaultChildId: null },
         "id_632": { id: "id_632", code: "632", name: "Giá vốn hàng bán", type: "Chi phí", balance: 0, parentId: null, isParent: false, children: [], defaultChildId: null },
         "id_642": { id: "id_642", code: "642", name: "Chi phí quản lý", type: "Chi phí", balance: 0, parentId: null, isParent: false, children: [], defaultChildId: null },
+        "id_811": { id: "id_811", code: "811", name: "Chi phí khác", type: "Chi phí", balance: 0, parentId: null, isParent: false, children: [], defaultChildId: null },
+        "id_821": { id: "id_821", code: "821", name: "Chi phí thuế thu nhập doanh nghiệp", type: "Chi phí", balance: 0, parentId: null, isParent: false, children: [], defaultChildId: null },
         "id_911": { id: "id_911", code: "911", name: "Xác định kết quả kinh doanh", type: "Tài sản", balance: 0, parentId: null, isParent: false, children: [], defaultChildId: null },
     };
 
@@ -1446,9 +1450,11 @@
     let closingRules = [
         { id: "CR001", ten_quy_tac: "Kết chuyển Giá vốn", tai_khoan_nguon: "632", tai_khoan_dich: "911", loai_ket_chuyen: "chi_phi" },
         { id: "CR002", ten_quy_tac: "Kết chuyển Chi phí quản lý", tai_khoan_nguon: "642", tai_khoan_dich: "911", loai_ket_chuyen: "chi_phi" },
-        { id: "CR003", ten_quy_tac: "Kết chuyển Doanh thu", tai_khoan_nguon: "511", tai_khoan_dich: "911", loai_ket_chuyen: "doanh_thu" }
+        { id: "CR003", ten_quy_tac: "Kết chuyển Doanh thu", tai_khoan_nguon: "511", tai_khoan_dich: "911", loai_ket_chuyen: "doanh_thu" },
+        { id: "CR004", ten_quy_tac: "Kết chuyển Thu nhập khác", tai_khoan_nguon: "711", tai_khoan_dich: "911", loai_ket_chuyen: "doanh_thu" },
+        { id: "CR005", ten_quy_tac: "Kết chuyển Chi phí khác", tai_khoan_nguon: "811", tai_khoan_dich: "911", loai_ket_chuyen: "chi_phi" }
     ];
-    let closingRuleCounter = 4;
+    let closingRuleCounter = 6;
 
     // Transactions array - uses account IDs (with isLocked property)
     let transactions = [
@@ -2688,9 +2694,26 @@
     }
 
     function executeClosing() {
-        // First depreciate all assets
+        // Step 1: VAT offset at period end
         let totalDepreciation = 0;
         const date = getToday();
+        const vatInputBalance = Math.max(getAccountBalance('id_133'), 0);
+        const vatOutputBalance = Math.abs(Math.min(getAccountBalance('id_3331'), 0));
+        const vatOffsetAmount = Math.min(vatInputBalance, vatOutputBalance);
+
+        if (vatOffsetAmount > 0) {
+            addTransaction(
+                date,
+                'closing',
+                `PCK${String(transactionIdCounter).padStart(3, '0')}`,
+                'Khấu trừ thuế GTGT cuối kỳ',
+                'id_3331',
+                'id_133',
+                vatOffsetAmount
+            );
+        }
+
+        // Step 2a: Depreciate fixed assets before closing expenses
         fixedAssets.forEach(asset => {
             if (asset.remainingMonths > 0) {
                 totalDepreciation += asset.depreciationPerMonth;
@@ -2705,6 +2728,7 @@
         let totalRevenue = 0;
         let totalExpenses = 0;
 
+        // Step 2b: Close revenue/income and expenses to 911 based on dynamic rules
         closingRules.forEach(rule => {
             const targetAccount = getAccountByCode(rule.tai_khoan_dich);
             if (!targetAccount) return;
@@ -2747,10 +2771,40 @@
             });
         });
 
+        // Step 3: Calculate and close corporate income tax
+        const profitBeforeTax = -getAccountBalance('id_911');
+        let corporateIncomeTax = 0;
+
+        if (profitBeforeTax > 0) {
+            corporateIncomeTax = profitBeforeTax * 0.2;
+
+            addTransaction(
+                date,
+                'closing',
+                `PCK${String(transactionIdCounter).padStart(3, '0')}`,
+                'Tính thuế TNDN phải nộp',
+                'id_821',
+                'id_3334',
+                corporateIncomeTax
+            );
+
+            addTransaction(
+                date,
+                'closing',
+                `PCK${String(transactionIdCounter).padStart(3, '0')}`,
+                'Kết chuyển chi phí thuế TNDN',
+                'id_911',
+                'id_821',
+                corporateIncomeTax
+            );
+
+            totalExpenses += corporateIncomeTax;
+        }
+
+        // Step 4: Close final after-tax profit/loss from 911 to 421
         const incomeSummaryBalance = getAccountBalance('id_911');
         const profit = -incomeSummaryBalance;
 
-        // Close Income Summary (911) to Retained Earnings (421)
         if (incomeSummaryBalance < 0) {
             addTransaction(date, 'closing', `PCK${String(transactionIdCounter).padStart(3, '0')}`, `Kết chuyển lợi nhuận`, 'id_911', 'id_421', Math.abs(incomeSummaryBalance));
         } else if (incomeSummaryBalance > 0) {
@@ -2770,10 +2824,10 @@
         const messageDiv = document.getElementById('closing-message');
         if (profit >= 0) {
             messageDiv.className = 'p-4 rounded-lg bg-emerald-900/30 border border-emerald-700/50';
-            messageDiv.innerHTML = `<p class="text-emerald-300 font-semibold">🎉 Chúc mừng! Bạn lãi ${formatCurrency(profit)} trong kỳ này. Đã khấuhao ${formatCurrency(totalDepreciation)} và thực hiện hoàn tất các bút toán kết chuyển động!</p>`;
+            messageDiv.innerHTML = `<p class="text-emerald-300 font-semibold">🎉 Chúc mừng! Bạn lãi sau thuế ${formatCurrency(profit)} trong kỳ này. Đã khấu trừ VAT ${formatCurrency(vatOffsetAmount)}, khấu hao ${formatCurrency(totalDepreciation)} và tính thuế TNDN ${formatCurrency(corporateIncomeTax)}.</p>`;
         } else {
             messageDiv.className = 'p-4 rounded-lg bg-red-900/30 border border-red-700/50';
-            messageDiv.innerHTML = `<p class="text-red-300 font-semibold">⚠️ Bạn lỗ ${formatCurrency(-profit)} trong kỳ này. Đã khấuhao ${formatCurrency(totalDepreciation)} và thực hiện hoàn tất các bút toán kết chuyển động!</p>`;
+            messageDiv.innerHTML = `<p class="text-red-300 font-semibold">⚠️ Bạn lỗ ${formatCurrency(-profit)} trong kỳ này. Đã khấu trừ VAT ${formatCurrency(vatOffsetAmount)}, khấu hao ${formatCurrency(totalDepreciation)} và không phát sinh thuế TNDN phải nộp.</p>`;
         }
         
         document.getElementById('closing-result').classList.remove('hidden');
