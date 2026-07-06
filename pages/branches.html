@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Danh mục Chi nhánh - Kế Toán Dễ Dàng</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../styles.css">
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen" data-page-module="branches">
+    <div class="flex h-screen">
+        <aside class="w-64 glassmorphism border-r border-slate-700 flex flex-col">
+            <div class="p-6 border-b border-slate-700">
+                <h1 class="text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                    Kế Toán Dễ Dàng
+                </h1>
+                <p class="text-xs text-slate-400 mt-1">Dành cho người mới</p>
+            </div>
+            <nav class="flex-1 p-4 space-y-2 overflow-auto">
+                <button onclick="showModule('dashboard')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-dashboard">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 011 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                    </svg>
+                    <span>Tổng quan</span>
+                </button>
+                <button onclick="showModule('accounts')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-accounts">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <span>Hệ thống tài khoản</span>
+                </button>
+                <button onclick="showModule('inventory')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-inventory">
+                    <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                    <span>Quản lý kho</span>
+                </button>
+                <button onclick="showModule('fixed-assets')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-fixed-assets">
+                    <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2v10m0 0a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2m-3 0h6m-6 0h6a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2v10a2 2 0 002 2h2a2 2 0 002-2"/>
+                    </svg>
+                    <span>Tài sản cố định</span>
+                </button>
+
+                <div class="pt-4 pb-2 px-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">Lập phiếu</div>
+                <button onclick="showModule('voucher-receive')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-voucher-receive"><span>Phiếu Thu</span></button>
+                <button onclick="showModule('voucher-pay')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-voucher-pay"><span>Phiếu Chi</span></button>
+                <button onclick="showModule('voucher-import')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-voucher-import"><span>Phiếu Nhập Kho</span></button>
+                <button onclick="showModule('voucher-export')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-voucher-export"><span>Phiếu Xuất Kho</span></button>
+
+                <div class="pt-4 pb-2 px-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">Báo cáo</div>
+                <button onclick="showModule('receivables-payables')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-receivables-payables"><span>Công nợ</span></button>
+                <button onclick="showModule('cash-flow')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-cash-flow"><span>Dòng tiền</span></button>
+                <button onclick="showModule('journal')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-journal"><span>Sổ Nhật Ký</span></button>
+                <button onclick="showModule('ledger')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-ledger"><span>Sổ Chi Tiết</span></button>
+                <button onclick="showModule('closing')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-closing"><span>Kết chuyển cuối kỳ</span></button>
+                <button onclick="showModule('closing-config')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-closing-config"><span>Cấu hình kết chuyển</span></button>
+                <button onclick="showModule('opening-balance')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-opening-balance"><span>Cài đặt số dư đầu kỳ</span></button>
+                <button onclick="showModule('lock-period')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-lock-period"><span>Khóa sổ</span></button>
+                <button onclick="showModule('balance')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-balance"><span>Bảng Cân Đối</span></button>
+            </nav>
+        </aside>
+
+        <main class="flex-1 overflow-auto p-6">
+            <div id="module-branches" class="module hidden fade-in">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-cyan-400">Danh mục Chi nhánh</h2>
+                    <p class="text-slate-400 mt-1">Khai báo các chi nhánh để mỗi chứng từ có thể hạch toán riêng và xem báo cáo hợp nhất hoặc tách riêng.</p>
+                </div>
+
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                    <div class="xl:col-span-1 glassmorphism rounded-xl p-6">
+                        <h3 class="text-lg font-semibold mb-4">Thêm chi nhánh mới</h3>
+                        <form id="form-add-branch" class="space-y-4">
+                            <div>
+                                <label class="block text-sm mb-2">Tên chi nhánh</label>
+                                <input type="text" id="branch-name" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:border-cyan-500" placeholder="Ví dụ: Chi nhánh Quận 7">
+                            </div>
+                            <div>
+                                <label class="block text-sm mb-2">Địa chỉ</label>
+                                <input type="text" id="branch-address" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:border-cyan-500" placeholder="Ví dụ: 123 Nguyễn Huệ, Quận 1">
+                            </div>
+                            <div>
+                                <label class="block text-sm mb-2">Chế độ hạch toán</label>
+                                <select id="branch-mode" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:border-cyan-500">
+                                    <option value="chung">Hạch toán chung (dùng chung bộ tài khoản)</option>
+                                    <option value="doc_lap">Hạch toán độc lập (theo chi nhánh)</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="w-full bg-cyan-600 hover:bg-cyan-700 py-3 rounded-lg font-semibold transition-all">Lưu chi nhánh</button>
+                        </form>
+                    </div>
+
+                    <div class="xl:col-span-2 glassmorphism rounded-xl p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="text-lg font-semibold">Danh sách chi nhánh</h3>
+                                <p class="text-sm text-slate-400">Chi nhánh tạo ở đây sẽ xuất hiện trong dropdown của từng phiếu và bộ lọc báo cáo/sổ.</p>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-slate-800">
+                                    <tr>
+                                        <th class="text-left p-4 font-semibold">Mã</th>
+                                        <th class="text-left p-4 font-semibold">Tên chi nhánh</th>
+                                        <th class="text-left p-4 font-semibold">Địa chỉ</th>
+                                        <th class="text-left p-4 font-semibold">Chế độ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="branches-table"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../app.js"></script>
+</body>
+</html>
