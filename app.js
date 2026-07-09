@@ -723,48 +723,6 @@
         });
     }
 
-    function showRecvHelp() {
-        const loaiId = document.getElementById('recv-loai-thu').value;
-        const partnerId = document.getElementById('recv-partner').value;
-        const amount = parseFloat(document.getElementById('recv-amount').value) || 0;
-        const partner = getPartnerById(partnerId);
-        const loai = loaiThuList.find(l => l.id === loaiId);
-        
-        let message = `<div class="space-y-4">
-            <div class="p-3 rounded-lg bg-blue-900/30 border border-blue-700/50">
-                <h4 class="font-semibold text-blue-300 mb-2">📖 Bản chất nghiệp vụ</h4>
-                <p class="text-slate-300 text-sm">${loai ? loai.mo_ta : 'Chọn loại phiếu để xem chi tiết'}</p>
-            </div>
-            <div class="p-3 rounded-lg bg-purple-900/30 border border-purple-700/50">
-                <h4 class="font-semibold text-purple-300 mb-2">🔍 Nguồn gốc dữ liệu</h4>
-                <p class="text-slate-300 text-sm">
-                    Số tiền: ${amount > 0 ? formatCurrency(amount) : 'Chưa nhập'} <br>
-                    Đối tác: ${partner ? partner.name : 'Chưa chọn'}
-                </p>
-            </div>
-            <div class="p-3 rounded-lg bg-green-900/30 border border-green-700/50">
-                <h4 class="font-semibold text-green-300 mb-2">🔄 Tác động hệ thống</h4>
-                <p class="text-slate-300 text-sm">
-                    Sau khi lưu, phiếu sẽ được ghi vào Sổ Nhật Ký, cập nhật số dư tài khoản và các báo cáo liên quan!
-                </p>
-            </div>
-        </div>`;
-
-        alert(message.replace(/<[^>]*>/g, '')); // Temporary, use a modal next time
-    }
-
-    function toggleRecvCustomAccounts() {
-        const div = document.getElementById('recv-custom-accounts');
-        div.classList.toggle('hidden');
-        updateRecvPreview();
-    }
-
-    function togglePayCustomAccounts() {
-        const div = document.getElementById('pay-custom-accounts');
-        div.classList.toggle('hidden');
-        updatePayPreview();
-    }
-
     function toggleImportCustomAccounts() {
         const div = document.getElementById('import-custom-accounts');
         div.classList.toggle('hidden');
@@ -777,35 +735,163 @@
         updateExportPreview();
     }
 
+    // ==========================================
+    // MASTER-DETAIL: Phiếu Thu (multi-item)
+    // ==========================================
+    function populateRecvItemAccountSelects(row) {
+        const debitSelect = row.querySelector('.recv-debit');
+        const creditSelect = row.querySelector('.recv-credit');
+        const branchId = document.getElementById('recv-branch')?.value || 'all';
+        
+        [debitSelect, creditSelect].forEach(select => {
+            if (!select) return;
+            const currentValue = select.value;
+            select.innerHTML = '';
+            const filteredAccounts = Object.values(accounts)
+                .filter(account => {
+                    if (account.code === '000') return false;
+                    if (!isAccountVisibleInBranch(account, branchId)) return false;
+                    if (!isAccountSelectableInBranch(account, branchId)) return false;
+                    if (account.isParent && Array.isArray(account.children)) {
+                        const visibleChildrenCount = account.children.filter(childId => {
+                            const child = accounts[childId];
+                            return child && isAccountVisibleInBranch(child, branchId);
+                        }).length;
+                        if (visibleChildrenCount > 0) return false;
+                    }
+                    return true;
+                })
+                .sort((a, b) => a.code.localeCompare(b.code, 'vi'));
+            
+            filteredAccounts.forEach(account => {
+                const opt = document.createElement('option');
+                opt.value = account.id;
+                if (getAccountBranchId(account) && branchId === 'all') {
+                    opt.textContent = `${account.code} - ${account.name} (${getAccountBranchId(account)})`;
+                } else {
+                    opt.textContent = `${account.code} - ${account.name}`;
+                }
+                select.appendChild(opt);
+            });
+            select.value = currentValue;
+        });
+    }
+
+    function addRecvItemRow(debitId, creditId, desc, amount) {
+        const container = document.getElementById('recv-items');
+        if (!container) return;
+        const row = document.createElement('div');
+        row.className = 'bg-slate-800/50 p-4 rounded-lg grid grid-cols-12 gap-3 items-end recv-item-row';
+        row.innerHTML = `
+            <div class="col-span-3">
+                <label class="block text-xs mb-1 text-slate-400">Diễn giải</label>
+                <input type="text" class="recv-desc w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-500" placeholder="Ví dụ: Thu bán hàng" value="${desc || ''}">
+            </div>
+            <div class="col-span-3">
+                <label class="block text-xs mb-1 text-slate-400">TK Nợ</label>
+                <select class="recv-debit w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-500" onchange="calculateRecvTotals()"></select>
+            </div>
+            <div class="col-span-3">
+                <label class="block text-xs mb-1 text-slate-400">TK Có</label>
+                <select class="recv-credit w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-500" onchange="calculateRecvTotals()"></select>
+            </div>
+            <div class="col-span-2">
+                <label class="block text-xs mb-1 text-slate-400">Số tiền</label>
+                <input type="number" class="recv-amount w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-500 font-mono" placeholder="0" value="${amount || ''}" oninput="calculateRecvTotals()">
+            </div>
+            <div class="col-span-1">
+                <button type="button" onclick="removeRecvItemRow(this)" class="bg-red-600/20 hover:bg-red-600/30 text-red-400 px-3 py-2 rounded-lg transition-all w-full">
+                    <svg class="w-4 h-4 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        `;
+        container.appendChild(row);
+        populateRecvItemAccountSelects(row);
+
+        // Set default values if provided
+        if (debitId) {
+            const debitSelect = row.querySelector('.recv-debit');
+            if (debitSelect && Array.from(debitSelect.options).some(o => o.value === debitId)) debitSelect.value = debitId;
+            else if (debitSelect) debitSelect.value = 'id_111';
+        }
+        if (creditId) {
+            const creditSelect = row.querySelector('.recv-credit');
+            if (creditSelect && Array.from(creditSelect.options).some(o => o.value === creditId)) creditSelect.value = creditId;
+            else if (creditSelect) creditSelect.value = 'id_511';
+        }
+        calculateRecvTotals();
+    }
+
+    function removeRecvItemRow(btn) {
+        btn.closest('.recv-item-row')?.remove();
+        calculateRecvTotals();
+    }
+
+    function quickAddRecvItem() {
+        const loaiId = document.getElementById('recv-loai-thu')?.value;
+        const phuongThucId = document.getElementById('recv-phuong-thuc-tt')?.value || 'id_111';
+        const loai = loaiId ? loaiThuList.find(l => l.id === loaiId) : null;
+        if (loai) {
+            const paymentAcc = accounts[phuongThucId];
+            const creditAcc = accounts[loai.tai_khoan_co_mac_dinh];
+            addRecvItemRow(phuongThucId, loai.tai_khoan_co_mac_dinh, loai.ten_loai + (paymentAcc ? ` (${paymentAcc.code})` : ''), '');
+        } else {
+            addRecvItemRow('id_111', 'id_511', '', '');
+        }
+    }
+
+    function calculateRecvTotals() {
+        const container = document.getElementById('recv-items');
+        const totalEl = document.getElementById('recv-total-amount');
+        if (!container) return;
+        let total = 0;
+        container.querySelectorAll('.recv-item-row').forEach(row => {
+            const amount = parseFloat(row.querySelector('.recv-amount')?.value) || 0;
+            total += amount;
+        });
+        if (totalEl) totalEl.textContent = formatCurrency(total);
+        updateRecvPreview();
+    }
+
     function updateRecvPreview() {
         const previewContentDiv = document.getElementById('recv-preview-content');
-        const loaiId = document.getElementById('recv-loai-thu')?.value;
-        const phuongThucId = document.getElementById('recv-phuong-thuc-tt')?.value;
-        const amount = parseFloat(document.getElementById('recv-amount')?.value) || 0;
-        const customDiv = document.getElementById('recv-custom-accounts');
-        let debitAccountId, creditAccountId;
-        
-        if (customDiv && customDiv.classList.contains('hidden')) {
-            // Use default accounts
-            debitAccountId = phuongThucId;
-            const loai = loaiThuList.find(l => l.id === loaiId);
-            creditAccountId = loai ? loai.tai_khoan_co_mac_dinh : null;
-        } else {
-            // Use custom accounts
-            debitAccountId = document.getElementById('recv-debit')?.value;
-            creditAccountId = document.getElementById('recv-credit')?.value;
-        }
-        
-        const debitAccount = debitAccountId ? accounts[debitAccountId] : null;
-        const creditAccount = creditAccountId ? accounts[creditAccountId] : null;
-        
-        if (!previewContentDiv || !amount || !debitAccount || !creditAccount) {
-            previewContentDiv.innerHTML = `
-                <p class="text-slate-300 italic">Vui lòng điền đầy đủ thông tin để xem trước!</p>
-            `;
+        if (!previewContentDiv) return;
+        const container = document.getElementById('recv-items');
+        const rows = container ? container.querySelectorAll('.recv-item-row') : [];
+
+        if (rows.length === 0) {
+            previewContentDiv.innerHTML = `<p class="text-slate-300 italic">Vui lòng thêm ít nhất một dòng để xem trước!</p>`;
             return;
         }
-        
+
+        let tableRows = '';
+        let hasValid = false;
+        rows.forEach(row => {
+            const debitId = row.querySelector('.recv-debit')?.value;
+            const creditId = row.querySelector('.recv-credit')?.value;
+            const amount = parseFloat(row.querySelector('.recv-amount')?.value) || 0;
+            const debitAcc = debitId ? accounts[debitId] : null;
+            const creditAcc = creditId ? accounts[creditId] : null;
+            if (amount > 0 && debitAcc && creditAcc) {
+                hasValid = true;
+                tableRows += `
+                    <tr class="border-b border-slate-700/50">
+                        <td class="py-2 text-green-300">${debitAcc.code} - ${debitAcc.name}</td>
+                        <td class="py-2 text-right font-mono text-slate-200">${formatCurrency(amount)}</td>
+                        <td class="py-2 text-red-300">${creditAcc.code} - ${creditAcc.name}</td>
+                        <td class="py-2 text-right font-mono text-slate-200">${formatCurrency(amount)}</td>
+                    </tr>
+                `;
+            }
+        });
+
+        if (!hasValid) {
+            previewContentDiv.innerHTML = `<p class="text-slate-300 italic">Vui lòng điền đầy đủ thông tin cho từng dòng!</p>`;
+            return;
+        }
+
         previewContentDiv.innerHTML = `
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
@@ -817,89 +903,167 @@
                             <th class="py-2 text-right">Số tiền Có</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr class="border-b border-slate-700/50">
-                            <td class="py-2 text-green-300">${debitAccount.code} - ${debitAccount.name}</td>
-                            <td class="py-2 text-right font-mono text-slate-200">${formatCurrency(amount)}</td>
-                            <td class="py-2 text-red-300">${creditAccount.code} - ${creditAccount.name}</td>
-                            <td class="py-2 text-right font-mono text-slate-200">${formatCurrency(amount)}</td>
-                        </tr>
-                    </tbody>
+                    <tbody>${tableRows}</tbody>
                 </table>
             </div>
         `;
     }
 
-    function updateRecvExplanation() {
-        const select = document.getElementById('recv-loai-thu');
-        const explanationDiv = document.getElementById('recv-explanation');
-        const defaultEntriesDiv = document.getElementById('recv-default-entries');
-        if (!select || !explanationDiv) return;
-
-        const loai = loaiThuList.find(l => l.id === select.value);
-        if (loai) {
-            explanationDiv.innerHTML = `📝 ${loai.mo_ta}`;
-            if (defaultEntriesDiv) {
-                const debitAccountId = document.getElementById('recv-phuong-thuc-tt')?.value || 'id_111';
-                const debitAccount = accounts[debitAccountId];
-                const creditAccount = accounts[loai.tai_khoan_co_mac_dinh];
-                defaultEntriesDiv.innerHTML = `
-                    <div class="flex justify-between items-center p-2 bg-green-900/20 rounded border border-green-700/30">
-                        <span class="text-green-300"><strong>Nợ:</strong> ${debitAccount.code} - ${debitAccount.name}</span>
-                        <span class="text-red-300"><strong>Có:</strong> ${creditAccount.code} - ${creditAccount.name}</span>
-                    </div>
-                `;
-            }
-            // Also update the custom account selects to default values
-            const debitSelect = document.getElementById('recv-debit');
-            const creditSelect = document.getElementById('recv-credit');
-            if (debitSelect) debitSelect.value = document.getElementById('recv-phuong-thuc-tt')?.value || 'id_111';
-            if (creditSelect) creditSelect.value = loai.tai_khoan_co_mac_dinh;
-        }
-        updateRecvPreview();
-        updateRecvAmount();
+    // ==========================================
+    // MASTER-DETAIL: Phiếu Chi (multi-item)
+    // ==========================================
+    function populatePayItemAccountSelects(row) {
+        const debitSelect = row.querySelector('.pay-debit');
+        const creditSelect = row.querySelector('.pay-credit');
+        const branchId = document.getElementById('pay-branch')?.value || 'all';
+        
+        [debitSelect, creditSelect].forEach(select => {
+            if (!select) return;
+            const currentValue = select.value;
+            select.innerHTML = '';
+            const filteredAccounts = Object.values(accounts)
+                .filter(account => {
+                    if (account.code === '000') return false;
+                    if (!isAccountVisibleInBranch(account, branchId)) return false;
+                    if (!isAccountSelectableInBranch(account, branchId)) return false;
+                    if (account.isParent && Array.isArray(account.children)) {
+                        const visibleChildrenCount = account.children.filter(childId => {
+                            const child = accounts[childId];
+                            return child && isAccountVisibleInBranch(child, branchId);
+                        }).length;
+                        if (visibleChildrenCount > 0) return false;
+                    }
+                    return true;
+                })
+                .sort((a, b) => a.code.localeCompare(b.code, 'vi'));
+            
+            filteredAccounts.forEach(account => {
+                const opt = document.createElement('option');
+                opt.value = account.id;
+                if (getAccountBranchId(account) && branchId === 'all') {
+                    opt.textContent = `${account.code} - ${account.name} (${getAccountBranchId(account)})`;
+                } else {
+                    opt.textContent = `${account.code} - ${account.name}`;
+                }
+                select.appendChild(opt);
+            });
+            select.value = currentValue;
+        });
     }
 
-    function showPayHelp() {
-        const loaiId = document.getElementById('pay-loai-chi').value;
-        const partnerId = document.getElementById('pay-partner').value;
-        const amount = parseFloat(document.getElementById('pay-amount').value) || 0;
-        const partner = getPartnerById(partnerId);
-        const loai = loaiChiList.find(l => l.id === loaiId);
-        
-        let message = `📖 Bản chất nghiệp vụ:\n${loai ? loai.mo_ta : 'Chọn loại phiếu để xem chi tiết'}\n\n🔍 Nguồn gốc dữ liệu:\nSố tiền: ${amount > 0 ? amount.toLocaleString('vi-VN') : 'Chưa nhập'}\nĐối tác: ${partner ? partner.name : 'Chưa chọn'}\n\n🔄 Tác động hệ thống:\nSau khi lưu, phiếu sẽ được ghi vào Sổ Nhật Ký, cập nhật số dư tài khoản và các báo cáo liên quan!`;
-        alert(message);
+    function addPayItemRow(debitId, creditId, desc, amount) {
+        const container = document.getElementById('pay-items');
+        if (!container) return;
+        const row = document.createElement('div');
+        row.className = 'bg-slate-800/50 p-4 rounded-lg grid grid-cols-12 gap-3 items-end pay-item-row';
+        row.innerHTML = `
+            <div class="col-span-3">
+                <label class="block text-xs mb-1 text-slate-400">Diễn giải</label>
+                <input type="text" class="pay-desc w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-500" placeholder="Ví dụ: Trả lương" value="${desc || ''}">
+            </div>
+            <div class="col-span-3">
+                <label class="block text-xs mb-1 text-slate-400">TK Nợ</label>
+                <select class="pay-debit w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-500" onchange="calculatePayTotals()"></select>
+            </div>
+            <div class="col-span-3">
+                <label class="block text-xs mb-1 text-slate-400">TK Có</label>
+                <select class="pay-credit w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-500" onchange="calculatePayTotals()"></select>
+            </div>
+            <div class="col-span-2">
+                <label class="block text-xs mb-1 text-slate-400">Số tiền</label>
+                <input type="number" class="pay-amount w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-500 font-mono" placeholder="0" value="${amount || ''}" oninput="calculatePayTotals()">
+            </div>
+            <div class="col-span-1">
+                <button type="button" onclick="removePayItemRow(this)" class="bg-red-600/20 hover:bg-red-600/30 text-red-400 px-3 py-2 rounded-lg transition-all w-full">
+                    <svg class="w-4 h-4 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        `;
+        container.appendChild(row);
+        populatePayItemAccountSelects(row);
+
+        if (debitId) {
+            const debitSelect = row.querySelector('.pay-debit');
+            if (debitSelect && Array.from(debitSelect.options).some(o => o.value === debitId)) debitSelect.value = debitId;
+            else if (debitSelect) debitSelect.value = 'id_642';
+        }
+        if (creditId) {
+            const creditSelect = row.querySelector('.pay-credit');
+            if (creditSelect && Array.from(creditSelect.options).some(o => o.value === creditId)) creditSelect.value = creditId;
+            else if (creditSelect) creditSelect.value = 'id_111';
+        }
+        calculatePayTotals();
+    }
+
+    function removePayItemRow(btn) {
+        btn.closest('.pay-item-row')?.remove();
+        calculatePayTotals();
+    }
+
+    function quickAddPayItem() {
+        const loaiId = document.getElementById('pay-loai-chi')?.value;
+        const phuongThucId = document.getElementById('pay-phuong-thuc-tt')?.value || 'id_111';
+        const loai = loaiId ? loaiChiList.find(l => l.id === loaiId) : null;
+        if (loai) {
+            const creditAcc = accounts[phuongThucId];
+            addPayItemRow(loai.tai_khoan_no_mac_dinh, phuongThucId, loai.ten_loai + (creditAcc ? ` (${creditAcc.code})` : ''), '');
+        } else {
+            addPayItemRow('id_642', 'id_111', '', '');
+        }
+    }
+
+    function calculatePayTotals() {
+        const container = document.getElementById('pay-items');
+        const totalEl = document.getElementById('pay-total-amount');
+        if (!container) return;
+        let total = 0;
+        container.querySelectorAll('.pay-item-row').forEach(row => {
+            const amount = parseFloat(row.querySelector('.pay-amount')?.value) || 0;
+            total += amount;
+        });
+        if (totalEl) totalEl.textContent = formatCurrency(total);
+        updatePayPreview();
     }
 
     function updatePayPreview() {
         const previewContentDiv = document.getElementById('pay-preview-content');
-        const loaiId = document.getElementById('pay-loai-chi')?.value;
-        const phuongThucId = document.getElementById('pay-phuong-thuc-tt')?.value;
-        const amount = parseFloat(document.getElementById('pay-amount')?.value) || 0;
-        const customDiv = document.getElementById('pay-custom-accounts');
-        let debitAccountId, creditAccountId;
-        
-        if (customDiv && customDiv.classList.contains('hidden')) {
-            // Use default accounts
-            const loai = loaiChiList.find(l => l.id === loaiId);
-            debitAccountId = loai ? loai.tai_khoan_no_mac_dinh : null;
-            creditAccountId = phuongThucId;
-        } else {
-            // Use custom accounts
-            debitAccountId = document.getElementById('pay-debit')?.value;
-            creditAccountId = document.getElementById('pay-credit')?.value;
-        }
-        
-        const debitAccount = debitAccountId ? accounts[debitAccountId] : null;
-        const creditAccount = creditAccountId ? accounts[creditAccountId] : null;
-        
-        if (!previewContentDiv || !amount || !debitAccount || !creditAccount) {
-            previewContentDiv.innerHTML = `
-                <p class="text-slate-300 italic">Vui lòng điền đầy đủ thông tin để xem trước!</p>
-            `;
+        if (!previewContentDiv) return;
+        const container = document.getElementById('pay-items');
+        const rows = container ? container.querySelectorAll('.pay-item-row') : [];
+
+        if (rows.length === 0) {
+            previewContentDiv.innerHTML = `<p class="text-slate-300 italic">Vui lòng thêm ít nhất một dòng để xem trước!</p>`;
             return;
         }
-        
+
+        let tableRows = '';
+        let hasValid = false;
+        rows.forEach(row => {
+            const debitId = row.querySelector('.pay-debit')?.value;
+            const creditId = row.querySelector('.pay-credit')?.value;
+            const amount = parseFloat(row.querySelector('.pay-amount')?.value) || 0;
+            const debitAcc = debitId ? accounts[debitId] : null;
+            const creditAcc = creditId ? accounts[creditId] : null;
+            if (amount > 0 && debitAcc && creditAcc) {
+                hasValid = true;
+                tableRows += `
+                    <tr class="border-b border-slate-700/50">
+                        <td class="py-2 text-green-300">${debitAcc.code} - ${debitAcc.name}</td>
+                        <td class="py-2 text-right font-mono text-slate-200">${formatCurrency(amount)}</td>
+                        <td class="py-2 text-red-300">${creditAcc.code} - ${creditAcc.name}</td>
+                        <td class="py-2 text-right font-mono text-slate-200">${formatCurrency(amount)}</td>
+                    </tr>
+                `;
+            }
+        });
+
+        if (!hasValid) {
+            previewContentDiv.innerHTML = `<p class="text-slate-300 italic">Vui lòng điền đầy đủ thông tin cho từng dòng!</p>`;
+            return;
+        }
+
         previewContentDiv.innerHTML = `
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
@@ -911,68 +1075,12 @@
                             <th class="py-2 text-right">Số tiền Có</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr class="border-b border-slate-700/50">
-                            <td class="py-2 text-green-300">${debitAccount.code} - ${debitAccount.name}</td>
-                            <td class="py-2 text-right font-mono text-slate-200">${formatCurrency(amount)}</td>
-                            <td class="py-2 text-red-300">${creditAccount.code} - ${creditAccount.name}</td>
-                            <td class="py-2 text-right font-mono text-slate-200">${formatCurrency(amount)}</td>
-                        </tr>
-                    </tbody>
+                    <tbody>${tableRows}</tbody>
                 </table>
             </div>
         `;
     }
 
-    function updatePayExplanation() {
-        const select = document.getElementById('pay-loai-chi');
-        const explanationDiv = document.getElementById('pay-explanation');
-        const defaultEntriesDiv = document.getElementById('pay-default-entries');
-        if (!select || !explanationDiv) return;
-
-        const loai = loaiChiList.find(l => l.id === select.value);
-        if (loai) {
-            explanationDiv.innerHTML = `📝 ${loai.mo_ta}`;
-            if (defaultEntriesDiv) {
-                const debitAccount = accounts[loai.tai_khoan_no_mac_dinh];
-                const creditAccountId = document.getElementById('pay-phuong-thuc-tt')?.value || 'id_111';
-                const creditAccount = accounts[creditAccountId];
-                defaultEntriesDiv.innerHTML = `
-                    <div class="flex justify-between items-center p-2 bg-red-900/20 rounded border border-red-700/30">
-                        <span class="text-green-300"><strong>Nợ:</strong> ${debitAccount.code} - ${debitAccount.name}</span>
-                        <span class="text-red-300"><strong>Có:</strong> ${creditAccount.code} - ${creditAccount.name}</span>
-                    </div>
-                `;
-            }
-            // Also update the custom account selects to default values
-            const debitSelect = document.getElementById('pay-debit');
-            const creditSelect = document.getElementById('pay-credit');
-            if (debitSelect) debitSelect.value = loai.tai_khoan_no_mac_dinh;
-            if (creditSelect) creditSelect.value = document.getElementById('pay-phuong-thuc-tt')?.value || 'id_111';
-        }
-        updatePayPreview();
-        updatePayAmount();
-    }
-
-    function updateRecvAmount() {
-        const loaiId = document.getElementById('recv-loai-thu')?.value;
-        const partnerId = document.getElementById('recv-partner')?.value;
-        if (loaiId === 'LT002' && partnerId) { // Thu nợ khách hàng
-            // Auto fill with 131's balance (as an example, since we don't track per partner)
-            const receivableBalance = accounts['id_131'].balance;
-            document.getElementById('recv-amount').value = receivableBalance > 0 ? receivableBalance : '';
-        }
-    }
-
-    function updatePayAmount() {
-        const loaiId = document.getElementById('pay-loai-chi')?.value;
-        const partnerId = document.getElementById('pay-partner')?.value;
-        if (loaiId === 'LC003' && partnerId) { // Trả nợ nhà cung cấp
-            // Auto fill with 331's absolute balance (since credit is negative)
-            const payableBalance = -accounts['id_331'].balance;
-            document.getElementById('pay-amount').value = payableBalance > 0 ? payableBalance : '';
-        }
-    }
 
     function updateImportPreview() {
         const previewContentDiv = document.getElementById('import-preview-content');
@@ -2178,65 +2286,92 @@
 
     function saveReceiveVoucher(e) {
         e.preventDefault();
-        const date = document.getElementById('recv-date').value || getToday();
+        const date = document.getElementById('recv-date')?.value || getToday();
         const branchId = document.getElementById('recv-branch')?.value || getDefaultBranchId();
-        const partnerId = document.getElementById('recv-partner').value;
+        const partnerId = document.getElementById('recv-partner')?.value || '';
         const partner = getPartnerById(partnerId);
-        const loaiId = document.getElementById('recv-loai-thu').value;
-        const loai = loaiThuList.find(l => l.id === loaiId);
-        const customDiv = document.getElementById('recv-custom-accounts');
-        let debitId, creditId;
-        
-        if (customDiv && customDiv.classList.contains('hidden')) {
-            // Use default accounts
-            debitId = document.getElementById('recv-phuong-thuc-tt').value;
-            creditId = loai ? loai.tai_khoan_co_mac_dinh : null;
-        } else {
-            // Use custom accounts
-            debitId = document.getElementById('recv-debit').value;
-            creditId = document.getElementById('recv-credit').value;
+        const ref = `PT${String(transactionIdCounter).padStart(3, '0')}`;
+
+        const container = document.getElementById('recv-items');
+        const rows = container ? container.querySelectorAll('.recv-item-row') : [];
+
+        if (rows.length === 0) {
+            alert('Vui lòng thêm ít nhất một dòng!');
+            return;
         }
-        
-        const amount = parseFloat(document.getElementById('recv-amount').value) || 0;
-        if (!amount || !creditId || !debitId) return;
-        
-        addTransaction(date, 'receive', `PT${String(transactionIdCounter).padStart(3, '0')}`, `Thu tiền${partner ? ` từ ${partner.name}` : ''} (${loai?.ten_loai || 'Tùy chỉnh'})`, debitId, creditId, amount, branchId);
-        
+
+        let hasValid = false;
+        rows.forEach(row => {
+            const debitId = row.querySelector('.recv-debit')?.value;
+            const creditId = row.querySelector('.recv-credit')?.value;
+            const amount = parseFloat(row.querySelector('.recv-amount')?.value) || 0;
+            const desc = row.querySelector('.recv-desc')?.value?.trim() || '';
+
+            if (!amount || !debitId || !creditId) return;
+            hasValid = true;
+
+            const debitAcc = accounts[debitId];
+            const creditAcc = accounts[creditId];
+            const lineDesc = desc || `Thu tiền (${debitAcc?.code || ''} / ${creditAcc?.code || ''})`;
+            addTransaction(date, 'receive', ref, `${lineDesc}${partner ? ` - ${partner.name}` : ''}`, debitId, creditId, amount, branchId);
+        });
+
+        if (!hasValid) {
+            alert('Vui lòng điền đầy đủ TK Nợ, TK Có và Số tiền cho từng dòng!');
+            return;
+        }
+
         document.getElementById('form-receive').reset();
         document.getElementById('recv-date').value = getToday();
+        document.getElementById('recv-items').innerHTML = '';
+        calculateRecvTotals();
         renderAll();
+        alert('Lưu phiếu thu thành công!');
     }
 
     function savePayVoucher(e) {
         e.preventDefault();
-        const date = document.getElementById('pay-date').value || getToday();
+        const date = document.getElementById('pay-date')?.value || getToday();
         const branchId = document.getElementById('pay-branch')?.value || getDefaultBranchId();
-        const partnerId = document.getElementById('pay-partner').value;
+        const partnerId = document.getElementById('pay-partner')?.value || '';
         const partner = getPartnerById(partnerId);
-        const loaiId = document.getElementById('pay-loai-chi').value;
-        const loai = loaiChiList.find(l => l.id === loaiId);
-        const customDiv = document.getElementById('pay-custom-accounts');
-        let debitId, creditId;
-        
-        if (customDiv && customDiv.classList.contains('hidden')) {
-            // Use default accounts
-            debitId = loai ? loai.tai_khoan_no_mac_dinh : null;
-            creditId = document.getElementById('pay-phuong-thuc-tt').value;
-        } else {
-            // Use custom accounts
-            debitId = document.getElementById('pay-debit').value;
-            creditId = document.getElementById('pay-credit').value;
+        const ref = `PC${String(transactionIdCounter).padStart(3, '0')}`;
+
+        const container = document.getElementById('pay-items');
+        const rows = container ? container.querySelectorAll('.pay-item-row') : [];
+
+        if (rows.length === 0) {
+            alert('Vui lòng thêm ít nhất một dòng!');
+            return;
         }
-        
-        const desc = document.getElementById('pay-desc').value;
-        const amount = parseFloat(document.getElementById('pay-amount').value) || 0;
-        if (!amount || !debitId || !creditId) return;
-        
-        addTransaction(date, 'pay', `PC${String(transactionIdCounter).padStart(3, '0')}`, desc || `Chi tiền${partner ? ` cho ${partner.name}` : ''} (${loai?.ten_loai || 'Tùy chỉnh'})`, debitId, creditId, amount, branchId);
-        
+
+        let hasValid = false;
+        rows.forEach(row => {
+            const debitId = row.querySelector('.pay-debit')?.value;
+            const creditId = row.querySelector('.pay-credit')?.value;
+            const amount = parseFloat(row.querySelector('.pay-amount')?.value) || 0;
+            const desc = row.querySelector('.pay-desc')?.value?.trim() || '';
+
+            if (!amount || !debitId || !creditId) return;
+            hasValid = true;
+
+            const debitAcc = accounts[debitId];
+            const creditAcc = accounts[creditId];
+            const lineDesc = desc || `Chi tiền (${debitAcc?.code || ''} / ${creditAcc?.code || ''})`;
+            addTransaction(date, 'pay', ref, `${lineDesc}${partner ? ` - ${partner.name}` : ''}`, debitId, creditId, amount, branchId);
+        });
+
+        if (!hasValid) {
+            alert('Vui lòng điền đầy đủ TK Nợ, TK Có và Số tiền cho từng dòng!');
+            return;
+        }
+
         document.getElementById('form-pay').reset();
         document.getElementById('pay-date').value = getToday();
+        document.getElementById('pay-items').innerHTML = '';
+        calculatePayTotals();
         renderAll();
+        alert('Lưu phiếu chi thành công!');
     }
 
     function isInterBranchTransferTransaction(txn) {
@@ -4032,7 +4167,8 @@
                 { heading: 'Câu hỏi phải tự hỏi trước khi ghi', items: ['Tiền này vào vì bán hàng, vì khách trả nợ, hay vì chủ góp vốn?', 'Tiền tăng là chắc chắn, nhưng cái gì ở phía đối ứng sẽ thay đổi?'] },
                 { heading: 'Cặp định khoản thường gặp', items: ['Thu bán hàng tiền ngay: <code>Nợ 111 hoặc 112 / Có 511</code>.', 'Thu khách hàng trả nợ: <code>Nợ 111 hoặc 112 / Có 131</code>.', 'Chủ doanh nghiệp góp thêm vốn: <code>Nợ 111 hoặc 112 / Có 411</code>.'] },
                 { heading: 'Vì sao lại ghi như vậy', items: ['Tiền mặt hoặc tiền gửi là tài sản. Khi nhận tiền, tài sản tăng nên ghi <code>Nợ 111</code> hoặc <code>Nợ 112</code>.', 'Nếu thu do bán hàng thì doanh thu tăng, doanh thu tăng thường ghi <code>Có 511</code>.', 'Nếu thu là khách trả khoản đã nợ trước đó, thì không phải doanh thu mới nữa. Lúc này cần giảm khoản phải thu nên ghi <code>Có 131</code>.', 'Nếu chủ góp thêm vốn, doanh nghiệp không “kiếm ra” tiền mà được chủ bỏ thêm vào, nên phần đối ứng là <code>Có 411</code> chứ không phải <code>Có 511</code>.'] },
-                { heading: 'Sai lầm người mới hay gặp', items: ['Thấy tiền vào là ghi ngay vào doanh thu. Điều này sai nếu bản chất chỉ là khách trả nợ cũ hoặc chủ góp vốn.', 'Nhầm giữa <strong>dòng tiền vào</strong> và <strong>doanh thu</strong>. Không phải cứ tiền vào là doanh thu.'] }
+                { heading: 'Tại sao một phiếu thu có thể có nhiều dòng', items: ['<strong>Ví dụ 1 - Thu hỗn hợp</strong>: Ngân hàng báo Có 200 triệu. Trong đó 150 triệu là khách trả nợ và 50 triệu là chủ góp thêm vốn. Lúc này bạn cần 2 dòng: <code>Nợ 112 (200tr)</code> được ghi chung, nhưng đối ứng <code>Có 131 (150tr)</code> và <code>Có 411 (50tr)</code> là 2 khoản riêng biệt. Một phiếu sẽ có 2 dòng giao dịch.', '<strong>Ví dụ 2 - Nhiều nguồn thu</strong>: Lương tháng được chuyển khoản bao gồm 80 triệu lương chính và 20 triệu thưởng. Nếu muốn theo dõi chi tiết từng khoản, bạn tách thành 2 dòng với cùng TK Nợ 112 nhưng có thể khác TK Có hoặc cùng TK Có với diễn giải khác nhau.', '<strong>Ví dụ 3 - Khách trả 1 lần cho nhiều hóa đơn</strong>: Khách chuyển 1 khoản tiền thanh toán cho 3 hóa đơn khác nhau. Bạn ghi 3 dòng Nợ 112/Có 131 với diễn giải “HĐ001”, “HĐ002”, “HĐ003” để tiện đối chiếu công nợ sau này.'] },
+                { heading: 'Sai lầm người mới hay gặp', items: ['Thấy tiền vào là ghi ngay vào doanh thu. Điều này sai nếu bản chất chỉ là khách trả nợ cũ hoặc chủ góp vốn.', 'Nhầm giữa <strong>dòng tiền vào</strong> và <strong>doanh thu</strong>. Không phải cứ tiền vào là doanh thu.', 'Gộp tất cả các khoản thu vào 1 dòng duy nhất, khiến sau này không thể lọc theo từng loại nghiệp vụ trên Sổ Nhật Ký.'] }
             ]
         },
         'voucher-pay': {
@@ -4042,7 +4178,8 @@
                 { heading: 'Câu hỏi phải tự hỏi trước khi ghi', items: ['Khoản tiền đi ra này làm phát sinh chi phí mới hay chỉ là trả một khoản nợ cũ?', 'Tiền giảm là chắc chắn, nhưng bên đối ứng là chi phí hay công nợ?'] },
                 { heading: 'Cặp định khoản thường gặp', items: ['Chi phí hoạt động như điện nước, văn phòng phẩm, lương: <code>Nợ 642 / Có 111 hoặc 112</code>.', 'Trả nợ nhà cung cấp: <code>Nợ 331 / Có 111 hoặc 112</code>.'] },
                 { heading: 'Vì sao lại ghi như vậy', items: ['Khi chi tiền, tiền mặt hoặc ngân hàng giảm nên ghi <code>Có 111</code> hoặc <code>Có 112</code>.', 'Nếu chi để phục vụ hoạt động trong kỳ thì chi phí tăng, vì vậy ghi <code>Nợ 642</code>.', 'Nếu chỉ thanh toán khoản đã nợ nhà cung cấp từ trước, thì không tạo chi phí mới nữa. Lúc này cần giảm khoản phải trả nên ghi <code>Nợ 331</code>.'] },
-                { heading: 'Sai lầm người mới hay gặp', items: ['Nhìn thấy chi tiền là ghi ngay vào chi phí. Sai trong trường hợp trả nợ cũ hoặc ứng trước.', 'Nhầm “chi tiền” với “phát sinh chi phí”. Kế toán quan tâm bản chất hơn là dòng tiền.'] }
+                { heading: 'Tại sao một phiếu chi có thể có nhiều dòng', items: ['<strong>Ví dụ 1 - Chi hỗn hợp</strong>: Chi 50 triệu tiền mặt trả lương 30 triệu và mua văn phòng phẩm 20 triệu. Lúc này cần 2 dòng vì phát sinh 2 loại chi phí khác nhau, mặc dù cùng chi từ Tiền mặt: <code>Nợ 642 (30tr) / Có 111 (50tr)</code> và <code>Nợ 642 (20tr)</code>.', '<strong>Ví dụ 2 - Trả nhiều nhà cung cấp cùng lúc</strong>: Chuyển khoản 1 lần nhưng trả cho 3 nhà cung cấp khác nhau. Bạn tách thành 3 dòng <code>Nợ 331 / Có 112</code> với diễn giải ghi rõ từng nhà cung cấp, giúp đối chiếu công nợ chi tiết.', '<strong>Ví dụ 3 - Hóa đơn tổng hợp</strong>: Một hóa đơn điện nước có cả tiền điện, tiền nước, phí dịch vụ. Nếu muốn theo dõi chi tiết từng loại chi phí, bạn tách thành 3 dòng khác nhau với cùng TK Có 111/112 nhưng có thể dùng tài khoản con khác nhau của 642 (6421, 6422...) hoặc diễn giải khác nhau.'] },
+                { heading: 'Sai lầm người mới hay gặp', items: ['Nhìn thấy chi tiền là ghi ngay vào chi phí. Sai trong trường hợp trả nợ cũ hoặc ứng trước.', 'Nhầm “chi tiền” với “phát sinh chi phí”. Kế toán quan tâm bản chất hơn là dòng tiền.', 'Gộp tất cả các khoản chi vào 1 dòng, gây khó khăn khi muốn xem chi tiết từng loại chi phí phát sinh trong kỳ.'] }
             ]
         },
         'voucher-import': {
@@ -4732,17 +4869,22 @@
         document.getElementById('form-fnb-order')?.addEventListener('submit', saveFnbOrder);
         document.getElementById('form-inter-branch-transfer')?.addEventListener('submit', saveInterBranchTransferVoucher);
 
-        // Auto fill amount and update preview event listeners - Phiếu Thu
-        document.getElementById('recv-loai-thu')?.addEventListener('change', updateRecvExplanation);
-        document.getElementById('recv-partner')?.addEventListener('change', updateRecvExplanation);
-        document.getElementById('recv-phuong-thuc-tt')?.addEventListener('change', updateRecvExplanation);
-        document.getElementById('recv-amount')?.addEventListener('input', updateRecvPreview);
+        // Phiếu Thu: update preview when payment method changes
+        document.getElementById('recv-phuong-thuc-tt')?.addEventListener('change', () => {
+            // Re-populate account selects in all existing rows when payment method changes
+            document.getElementById('recv-items')?.querySelectorAll('.recv-item-row').forEach(row => {
+                populateRecvItemAccountSelects(row);
+            });
+            updateRecvPreview();
+        });
 
-        // Auto fill amount and update preview event listeners - Phiếu Chi
-        document.getElementById('pay-loai-chi')?.addEventListener('change', updatePayExplanation);
-        document.getElementById('pay-partner')?.addEventListener('change', updatePayExplanation);
-        document.getElementById('pay-phuong-thuc-tt')?.addEventListener('change', updatePayExplanation);
-        document.getElementById('pay-amount')?.addEventListener('input', updatePayPreview);
+        // Phiếu Chi: update preview when payment method changes
+        document.getElementById('pay-phuong-thuc-tt')?.addEventListener('change', () => {
+            document.getElementById('pay-items')?.querySelectorAll('.pay-item-row').forEach(row => {
+                populatePayItemAccountSelects(row);
+            });
+            updatePayPreview();
+        });
         
         // Update custom accounts when payment method changes - Phiếu Nhập
         document.getElementById('import-payment')?.addEventListener('change', () => {
