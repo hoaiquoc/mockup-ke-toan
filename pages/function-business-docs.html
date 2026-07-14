@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nghiệp vụ 17 chức năng - Kế Toán Dễ Dàng</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../styles.css">
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen" data-page-module="function-business-docs">
+    <div class="flex h-screen">
+        <aside class="w-64 glassmorphism border-r border-slate-700 flex flex-col">
+            <div class="p-6 border-b border-slate-700">
+                <h1 class="text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">Kế Toán Dễ Dàng</h1>
+                <p class="text-xs text-slate-400 mt-1">Dành cho người mới</p>
+            </div>
+            <nav class="flex-1 p-4 space-y-2 overflow-auto"></nav>
+        </aside>
+
+        <main class="flex-1 overflow-auto p-6">
+            <div id="module-function-business-docs" class="module hidden fade-in">
+                <header class="mb-6">
+                    <h2 class="text-3xl font-bold text-violet-300">Tài liệu nghiệp vụ theo 17 chức năng</h2>
+                    <p class="text-slate-400 mt-2">Click vào từng chức năng để mở popup nghiệp vụ chi tiết: mục tiêu, luồng xử lý theo bước, định khoản mẫu, rule kiểm soát, nhánh lỗi và tiêu chí nghiệm thu.</p>
+                </header>
+
+                <section class="glassmorphism rounded-xl p-6">
+                    <div class="flex flex-wrap items-center gap-3 mb-4">
+                        <input id="fn-search" type="text" placeholder="Tìm chức năng..." class="w-full max-w-md bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-violet-500">
+                        <p class="text-xs text-slate-400">Tổng chức năng: <span id="fn-count" class="font-semibold text-violet-300">17</span></p>
+                    </div>
+                    <div id="function-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3"></div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <div id="biz-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/70 p-4">
+        <div class="w-full max-w-3xl glassmorphism rounded-2xl border border-slate-700 shadow-2xl max-h-[90vh] overflow-hidden">
+            <div class="flex items-start justify-between gap-4 border-b border-slate-700 px-6 py-4">
+                <div>
+                    <p id="modal-code" class="text-xs uppercase tracking-wide text-violet-300 font-semibold"></p>
+                    <h3 id="modal-title" class="text-xl font-bold text-slate-100 mt-1"></h3>
+                </div>
+                <button id="modal-close" type="button" class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-slate-300 hover:bg-slate-700">Đóng</button>
+            </div>
+            <div id="modal-body" class="px-6 py-5 overflow-auto max-h-[70vh]"></div>
+        </div>
+    </div>
+
+    <script src="../app.js"></script>
+    <script>
+        const functionDocs = [
+            { code: '3.1', name: 'Danh mục tài khoản kế toán', goal: 'Quản lý cây tài khoản chuẩn, không sai mã, không phá dữ liệu lịch sử.', flow: ['Tạo tài khoản cha/con theo hệ thống chuẩn.', 'Khóa sửa mã tài khoản đã phát sinh bút toán.', 'Cho phép ngưng dùng nhưng không xóa cứng tài khoản đã dùng.'], posting: 'Không phát sinh định khoản trực tiếp.', rules: ['Không trùng mã tài khoản.', 'Tài khoản cha không post trực tiếp.', 'Lưu lịch sử thay đổi quan trọng.'], accept: ['Tạo/sửa hợp lệ.', 'Chặn trùng mã.', 'Chặn đổi mã tài khoản đã phát sinh.'] },
+            { code: '3.2', name: 'Mở sổ và khóa sổ', goal: 'Bảo vệ dữ liệu kỳ đã chốt, đảm bảo số liệu không bị sửa trái phép.', flow: ['Thiết lập ngày khóa mặc định theo tháng.', 'Khóa kỳ theo chi nhánh hoặc toàn công ty.', 'Mở khóa bắt buộc lý do và phân quyền kế toán trưởng.'], posting: 'Không phát sinh định khoản trực tiếp.', rules: ['Kỳ khóa chặn create/update/delete chứng từ.', 'Unlock bắt buộc reason + audit log.', 'Không khóa nếu backlog chưa hạch toán > 0.'], accept: ['Khóa kỳ thành công.', 'API chứng từ trả ACC_PERIOD_LOCKED khi kỳ khóa.', 'Mở khóa có log người thao tác.'] },
+            { code: '3.3', name: 'Sổ nhật ký chung', goal: 'Tra cứu toàn bộ bút toán theo thời gian và theo bộ lọc nghiệp vụ.', flow: ['Nhận dữ liệu từ journal entries và journal lines.', 'Lọc theo ngày, tài khoản, loại chứng từ, chi nhánh.', 'Cho export phục vụ đối chiếu và kiểm toán.'], posting: 'Không phát sinh định khoản mới.', rules: ['Sắp xếp posting date tăng dần.', 'Số liệu export phải khớp màn hình.', 'Có phân trang để xử lý dữ liệu lớn.'], accept: ['Lọc đúng.', 'Export đúng.', 'Hiệu năng ổn với dữ liệu tháng lớn.'] },
+            { code: '3.4', name: 'Sổ chi tiết tài khoản', goal: 'Theo dõi biến động từng tài khoản và số dư chạy.', flow: ['Chọn tài khoản + kỳ + chi nhánh.', 'Tính opening/debit/credit/ending.', 'Drill-down về chứng từ gốc.'], posting: 'Không phát sinh định khoản mới.', rules: ['Ending = Opening + Debit - Credit.', 'Mỗi dòng phải truy vết về voucher.', 'Khớp với số dư tổng hợp cùng kỳ.'], accept: ['Công thức đúng.', 'Drill-down đúng chứng từ.', 'Khớp số với báo cáo tổng.'] },
+            { code: '3.5', name: 'Bảng cân đối kế toán', goal: 'Tổng hợp tài sản, nợ phải trả, vốn chủ sở hữu đúng bản chất.', flow: ['Map tài khoản vào chỉ tiêu báo cáo.', 'Tính tổng tài sản và tổng nguồn vốn.', 'Cảnh báo sai lệch khi mất cân.'], posting: 'Không phát sinh định khoản mới.', rules: ['Phải có mapping cho tài khoản phát sinh.', 'Cảnh báo khi totalAssets != totalLiabilitiesAndEquity.', 'Cho xem theo chi nhánh hoặc hợp nhất.'], accept: ['Map đúng chỉ tiêu.', 'Có cảnh báo lệch.', 'Khớp số với ledger/journal.'] },
+            { code: '3.6', name: 'Kết chuyển cuối kỳ', goal: 'Xác định kết quả kinh doanh cuối kỳ chính xác và có thể kiểm soát.', flow: ['Kiểm tra điều kiện chạy (backlog = 0).', 'Sinh bút toán kết chuyển doanh thu/chi phí về 911.', 'Kết chuyển lãi/lỗ sang 421.'], posting: 'Ví dụ: Nợ 511/Có 911; Nợ 911/Có 632; Nợ 911/Có 421 (trường hợp lãi).', rules: ['Chống chạy lặp theo kỳ.', 'Reverse có phân quyền.', 'Lưu lịch sử run và người thực hiện.'], accept: ['Run lần đầu thành công.', 'Run lần hai không sinh trùng.', 'Reverse có log đầy đủ.'] },
+            { code: '3.7', name: 'Công nợ khách hàng (131)', goal: 'Theo dõi phải thu khách hàng và tuổi nợ chính xác.', flow: ['Tổng hợp phát sinh từ hóa đơn bán, phiếu thu, bút toán điều chỉnh.', 'Tính tuổi nợ theo bucket.', 'Hỗ trợ xem statement từng khách.'], posting: 'Ví dụ thu nợ: Nợ 111/Có 131.', rules: ['Bucket: 0-30, 31-60, 61-90, >90.', 'Số dư cuối = đầu + phát sinh tăng - phát sinh giảm.', 'Khớp với sổ tài khoản 131.'], accept: ['Khớp hóa đơn và phiếu thu.', 'Bucket đúng ngày quá hạn.', 'Không lệch với sổ cái 131.'] },
+            { code: '3.8', name: 'Công nợ nhà cung cấp (331)', goal: 'Theo dõi nghĩa vụ phải trả và hạn thanh toán theo NCC.', flow: ['Tổng hợp từ hóa đơn mua, phiếu chi, điều chỉnh.', 'Tính tuổi nợ phải trả.', 'Theo dõi đối trừ công nợ khi có hoàn ứng.'], posting: 'Ví dụ trả nợ NCC: Nợ 331/Có 112.', rules: ['Cần rule đối trừ rõ ràng.', 'Báo nợ đến hạn và quá hạn.', 'Khớp sổ 331.'], accept: ['Khớp hóa đơn mua và phiếu chi.', 'Tuổi nợ đúng.', 'Báo cáo hạn thanh toán chính xác.'] },
+            { code: '3.9', name: 'Đối soát', goal: 'Phát hiện và xử lý sai lệch dữ liệu trước chốt kỳ.', flow: ['Chạy job đối soát theo kỳ.', 'Sinh danh sách issue theo loại sai lệch.', 'Theo dõi xử lý open -> in_progress -> resolved.'], posting: 'Không phát sinh định khoản trực tiếp; chỉ hỗ trợ kiểm soát.', rules: ['Phải bắt lệch kho, lệch công nợ, lệch VAT, lệch báo cáo.', 'Mọi issue cần người phụ trách và deadline.', 'Không cho khóa kỳ khi còn issue P1 open.'], accept: ['Run sinh đúng issue.', 'Resolve có log.', 'Giảm lệch số liệu trước khóa sổ.'] },
+            { code: '3.10', name: 'Hạch toán chứng từ thu', goal: 'Ghi nhận thu tiền đúng bản chất và đúng tài khoản đối ứng.', flow: ['Nhập thông tin phiếu thu.', 'Validate kỳ, tài khoản, tổng tiền.', 'Sinh voucher và journal lines.'], posting: 'Ví dụ: Thu công nợ khách hàng -> Nợ 111/Có 131.', rules: ['Không cho posting date trong kỳ khóa.', 'Tổng dòng phải bằng tổng phiếu.', 'Chứng từ phải truy vết được nguồn thu.'], accept: ['Sinh bút toán đúng.', 'Chặn kỳ khóa.', 'Tra cứu được ở nhật ký và sổ chi tiết.'] },
+            { code: '3.11', name: 'Hạch toán chứng từ chi', goal: 'Ghi nhận chi tiền đúng mục đích (chi phí hoặc trả nợ).', flow: ['Nhập phiếu chi nhiều dòng.', 'Validate đối tượng nhận chi và hạn mức.', 'Sinh voucher + journal.'], posting: 'Ví dụ: Trả nợ NCC -> Nợ 331/Có 111.', rules: ['Tổng dòng = tổng phiếu.', 'Không cho vượt hạn mức nếu có cấu hình.', 'Chặn kỳ khóa.'], accept: ['Định khoản đúng.', 'Công nợ cập nhật đúng.', 'Không post được khi kỳ khóa.'] },
+            { code: '3.12', name: 'Hạch toán chứng từ nhập', goal: 'Ghi nhận nhập kho và VAT đầu vào đồng bộ giữa kho và kế toán.', flow: ['Nhập chứng từ nhập kho.', 'Cập nhật tồn kho.', 'Sinh bút toán nhập hàng + VAT.'], posting: 'Ví dụ: Nợ 156, Nợ 1331, Có 331.', rules: ['VAT đầu vào tách riêng 1331.', 'Giá trị kho và sổ kế toán phải đồng bộ.', 'Không cho nhập thiếu thông tin mặt hàng.'], accept: ['Tồn kho tăng đúng.', 'Bút toán cân.', 'Số 1331 và 331 đúng.'] },
+            { code: '3.13', name: 'Hạch toán chứng từ xuất', goal: 'Ghi nhận doanh thu, VAT đầu ra và giá vốn đầy đủ khi xuất bán.', flow: ['Nhập chứng từ xuất bán.', 'Check tồn kho và chặn âm kho.', 'Sinh 2 cặp bút toán doanh thu + giá vốn.'], posting: 'Ví dụ: Nợ 131/Có 511,33311 và Nợ 632/Có 156.', rules: ['Bắt buộc chặn âm kho.', 'Phải có đủ 2 cặp bút toán.', 'Doanh thu, VAT, giá vốn liên thông.'], accept: ['Không cho xuất âm kho.', 'Bút toán đủ và cân.', 'Báo cáo lợi nhuận gộp đúng.'] },
+            { code: '3.14', name: 'Hóa đơn mua vào', goal: 'Quản lý hóa đơn đầu vào và liên kết đúng chứng từ hạch toán.', flow: ['Tạo hóa đơn mua vào.', 'Link hóa đơn với phiếu nhập/phiếu chi.', 'Theo dõi trạng thái new/linked/posted.'], posting: 'Tham chiếu bút toán nhập kho và VAT đầu vào.', rules: ['Không trùng số hóa đơn theo NCC + ngày.', 'Phải link được về voucher.', 'Quản lý trạng thái rõ ràng.'], accept: ['Link chính xác.', 'Không trùng số.', 'Đối chiếu được 1331 và 331.'] },
+            { code: '3.15', name: 'Hóa đơn bán ra', goal: 'Quản lý hóa đơn đầu ra, trạng thái thanh toán và liên kết doanh thu.', flow: ['Tạo hóa đơn bán ra.', 'Link hóa đơn với phiếu xuất/phiếu thu.', 'Theo dõi unpaid/partial/paid.'], posting: 'Tham chiếu bút toán doanh thu 511, VAT 33311, công nợ 131.', rules: ['Số hóa đơn duy nhất theo ký hiệu + số.', 'Trạng thái thanh toán cập nhật theo thu tiền.', 'Phải truy vết về chứng từ gốc.'], accept: ['Không trùng số hóa đơn.', 'Liên kết đúng phiếu.', 'Khớp 511, 33311, 131.'] },
+            { code: '3.16', name: 'Danh sách chứng từ chưa hạch toán', goal: 'Đảm bảo không bỏ sót chứng từ trước khóa sổ và kết chuyển.', flow: ['Tổng hợp backlog chứng từ unposted.', 'Giao xử lý theo người phụ trách.', 'Post nhanh và đóng backlog.'], posting: 'Phát sinh định khoản khi thao tác post từ backlog.', rules: ['Định nghĩa unposted là chưa có journal hợp lệ.', 'Không cho khóa kỳ khi backlog > 0.', 'Theo dõi trạng thái xử lý.'], accept: ['Danh sách đúng.', 'Post từ queue thành công.', 'Backlog về 0 trước khóa kỳ.'] },
+            { code: '3.17', name: 'Cấu hình kỳ kế toán', goal: 'Dùng một nguồn cấu hình thống nhất cho lock, closing và báo cáo.', flow: ['Thiết lập năm tài chính và chu kỳ.', 'Cấu hình ngày khóa mặc định (default lock day).', 'Áp dụng đồng bộ cho toàn module.'], posting: 'Không phát sinh định khoản trực tiếp.', rules: ['Một nguồn config duy nhất.', 'Mọi thay đổi phải ghi audit.', 'Thay đổi config phải có cảnh báo ảnh hưởng.'], accept: ['Config lưu thành công.', 'Module lock/closing/report đọc đúng config.', 'Có log thay đổi.'] }
+        ];
+
+        function normalizeText(value) {
+            return (value || '').toString().trim().toLowerCase();
+        }
+
+        function renderFunctionList(keyword = '') {
+            const container = document.getElementById('function-list');
+            if (!container) return;
+
+            const data = functionDocs.filter(item => {
+                const haystack = normalizeText(`${item.code} ${item.name} ${item.goal} ${item.posting}`);
+                return !keyword || haystack.includes(keyword);
+            });
+
+            const countEl = document.getElementById('fn-count');
+            if (countEl) countEl.textContent = String(data.length);
+
+            container.innerHTML = data.map(item => `
+                <button type="button" data-code="${item.code}" class="fn-open text-left rounded-lg border border-slate-700 bg-slate-800/60 px-4 py-3 hover:border-violet-500/60 hover:bg-slate-700/60 transition-all">
+                    <p class="text-xs text-violet-300 font-semibold">${item.code}</p>
+                    <p class="font-medium mt-1">${item.name}</p>
+                    <p class="text-xs text-slate-400 mt-1 line-clamp-2">${item.goal}</p>
+                </button>
+            `).join('');
+
+            container.querySelectorAll('.fn-open').forEach(btn => {
+                btn.addEventListener('click', () => openFunctionPopup(btn.dataset.code));
+            });
+        }
+
+        function escapeHtml(value) {
+            return (value || '')
+                .toString()
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function buildDetailedFlow(item) {
+            const precheckSteps = item.rules.slice(0, 2);
+            const controlSteps = item.rules.slice(2);
+            const outputSteps = item.accept;
+
+            return [
+                {
+                    title: 'Bước 1 - Tiếp nhận yêu cầu và chuẩn hóa dữ liệu',
+                    detail: [
+                        `Nhận request cho chức năng ${item.code} - ${item.name}.`,
+                        'Chuẩn hóa dữ liệu đầu vào (ngày, mã đối tượng, tài khoản, số tiền).',
+                        'Gán bối cảnh xử lý: chi nhánh, kỳ kế toán, người thao tác.'
+                    ]
+                },
+                {
+                    title: 'Bước 2 - Validate tiền điều kiện',
+                    detail: precheckSteps.length ? precheckSteps : ['Kiểm tra quyền thao tác, dữ liệu bắt buộc, trạng thái kỳ kế toán.']
+                },
+                {
+                    title: 'Bước 3 - Xử lý nghiệp vụ chính',
+                    detail: item.flow
+                },
+                {
+                    title: 'Bước 4 - Ghi nhận định khoản hoặc cập nhật dữ liệu liên quan',
+                    detail: [item.posting]
+                },
+                {
+                    title: 'Bước 5 - Kiểm soát hậu xử lý',
+                    detail: controlSteps.length ? controlSteps : ['Đối chiếu dữ liệu sau xử lý và ghi log kiểm soát.']
+                },
+                {
+                    title: 'Bước 6 - Trả kết quả và cập nhật báo cáo',
+                    detail: outputSteps
+                }
+            ];
+        }
+
+        function buildErrorBranches(item) {
+            const hasLockRule = item.rules.some(rule => normalizeText(rule).includes('khóa'));
+            const hasDuplicateRule = item.rules.some(rule => normalizeText(rule).includes('trùng'));
+            const hasBalanceRule = item.rules.some(rule => normalizeText(rule).includes('cân') || normalizeText(rule).includes('lệch'));
+
+            const branches = [
+                'Thiếu dữ liệu bắt buộc: trả lỗi validate và highlight trường lỗi.',
+                'Sai quyền thao tác: từ chối request và ghi audit hành động bị chặn.'
+            ];
+
+            if (hasLockRule) branches.push('Vướng kỳ khóa: trả mã ACC_PERIOD_LOCKED, không ghi dữ liệu.');
+            if (hasDuplicateRule) branches.push('Dữ liệu trùng số: trả mã ACC_DUPLICATE_NUMBER để người dùng xử lý.');
+            if (hasBalanceRule) branches.push('Dữ liệu lệch cân/đối chiếu: rollback transaction và ghi cảnh báo đối soát.');
+
+            branches.push('Lỗi hệ thống (DB/timeout): rollback transaction, trả lỗi kỹ thuật có requestId để truy vết.');
+            return branches;
+        }
+
+        function openFunctionPopup(code) {
+            const item = functionDocs.find(x => x.code === code);
+            if (!item) return;
+
+            document.getElementById('modal-code').textContent = `Chức năng ${item.code}`;
+            document.getElementById('modal-title').textContent = item.name;
+
+            const detailedFlow = buildDetailedFlow(item);
+            const errorBranches = buildErrorBranches(item);
+
+            const body = document.getElementById('modal-body');
+            body.innerHTML = `
+                <section class="mb-4">
+                    <h4 class="text-sm font-semibold text-violet-300 uppercase tracking-wide mb-2">Mục tiêu nghiệp vụ</h4>
+                    <p class="text-sm text-slate-300">${escapeHtml(item.goal)}</p>
+                </section>
+                <section class="mb-4">
+                    <h4 class="text-sm font-semibold text-cyan-300 uppercase tracking-wide mb-2">Luồng xử lý</h4>
+                    <ul class="list-disc list-inside text-sm text-slate-300 space-y-1">
+                        ${item.flow.map(s => `<li>${escapeHtml(s)}</li>`).join('')}
+                    </ul>
+                </section>
+                <section class="mb-4">
+                    <h4 class="text-sm font-semibold text-fuchsia-300 uppercase tracking-wide mb-2">Luồng xử lý chi tiết (end-to-end)</h4>
+                    <div class="space-y-3">
+                        ${detailedFlow.map(step => `
+                            <div class="rounded-lg border border-slate-700 bg-slate-800/60 p-3">
+                                <p class="font-semibold text-slate-100 text-sm">${escapeHtml(step.title)}</p>
+                                <ul class="list-disc list-inside text-sm text-slate-300 mt-2 space-y-1">
+                                    ${step.detail.map(detail => `<li>${escapeHtml(detail)}</li>`).join('')}
+                                </ul>
+                            </div>
+                        `).join('')}
+                    </div>
+                </section>
+                <section class="mb-4">
+                    <h4 class="text-sm font-semibold text-emerald-300 uppercase tracking-wide mb-2">Định khoản hoặc xử lý mẫu</h4>
+                    <p class="text-sm text-slate-200 bg-slate-900 rounded-lg p-3 border border-slate-700 whitespace-pre-line">${escapeHtml(item.posting)}</p>
+                </section>
+                <section class="mb-4">
+                    <h4 class="text-sm font-semibold text-amber-300 uppercase tracking-wide mb-2">Rule kiểm soát bắt buộc</h4>
+                    <ul class="list-disc list-inside text-sm text-slate-300 space-y-1">
+                        ${item.rules.map(s => `<li>${escapeHtml(s)}</li>`).join('')}
+                    </ul>
+                </section>
+                <section class="mb-4">
+                    <h4 class="text-sm font-semibold text-orange-300 uppercase tracking-wide mb-2">Nhánh lỗi cần xử lý</h4>
+                    <ul class="list-disc list-inside text-sm text-slate-300 space-y-1">
+                        ${errorBranches.map(s => `<li>${escapeHtml(s)}</li>`).join('')}
+                    </ul>
+                </section>
+                <section>
+                    <h4 class="text-sm font-semibold text-rose-300 uppercase tracking-wide mb-2">Tiêu chí nghiệm thu</h4>
+                    <ul class="list-disc list-inside text-sm text-slate-300 space-y-1">
+                        ${item.accept.map(s => `<li>${escapeHtml(s)}</li>`).join('')}
+                    </ul>
+                </section>
+            `;
+
+            const modal = document.getElementById('biz-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeFunctionPopup() {
+            const modal = document.getElementById('biz-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        window.addEventListener('load', () => {
+            renderFunctionList();
+            const input = document.getElementById('fn-search');
+            if (input) {
+                input.addEventListener('input', () => renderFunctionList(normalizeText(input.value)));
+            }
+
+            const closeBtn = document.getElementById('modal-close');
+            if (closeBtn) closeBtn.addEventListener('click', closeFunctionPopup);
+
+            const modal = document.getElementById('biz-modal');
+            if (modal) {
+                modal.addEventListener('click', (event) => {
+                    if (event.target === modal) closeFunctionPopup();
+                });
+            }
+        });
+    </script>
+</body>
+</html>

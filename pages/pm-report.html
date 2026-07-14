@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Báo cáo PM - Kế Toán Dễ Dàng</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../styles.css">
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen" data-page-module="pm-report">
+    <div class="flex h-screen">
+        <aside class="w-64 glassmorphism border-r border-slate-700 flex flex-col">
+            <div class="p-6 border-b border-slate-700">
+                <h1 class="text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">Kế Toán Dễ Dàng</h1>
+                <p class="text-xs text-slate-400 mt-1">Dành cho người mới</p>
+            </div>
+            <nav class="flex-1 p-4 space-y-2 overflow-auto"></nav>
+        </aside>
+
+        <main class="flex-1 overflow-auto p-6">
+            <div id="module-pm-report" class="module hidden fade-in">
+                <header class="mb-8">
+                    <h2 class="text-3xl font-bold text-cyan-300">Báo cáo PM - Triển khai tính năng kế toán</h2>
+                    <p class="text-slate-400 mt-2">Dashboard theo dõi đầu việc, ưu tiên, trạng thái và mức độ sẵn sàng go-live.</p>
+                    <div class="mt-4 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-100">
+                        Mục tiêu: hỗ trợ PM/Kế toán trưởng theo dõi phạm vi, kiểm soát rủi ro và chốt ưu tiên theo sprint.
+                    </div>
+                </header>
+
+                <section class="glassmorphism rounded-xl p-6 mb-6">
+                    <h3 class="text-lg font-semibold mb-3">Bộ lọc nhanh</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3 text-sm">
+                        <input id="pm-filter-search" type="text" placeholder="Tìm theo chức năng hoặc đầu việc" class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:border-cyan-500">
+                        <select id="pm-filter-priority" class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:border-cyan-500">
+                            <option value="all">Ưu tiên: Tất cả</option>
+                            <option value="P1">Ưu tiên: P1</option>
+                            <option value="P2">Ưu tiên: P2</option>
+                            <option value="P3">Ưu tiên: P3</option>
+                        </select>
+                        <select id="pm-filter-status" class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:border-cyan-500">
+                            <option value="all">Trạng thái: Tất cả</option>
+                            <option value="chưa triển khai">Chưa triển khai</option>
+                            <option value="đang thực hiện">Đang thực hiện</option>
+                            <option value="cần nâng cấp">Cần nâng cấp</option>
+                            <option value="chưa hoàn tất">Chưa hoàn tất</option>
+                        </select>
+                        <select id="pm-filter-cluster" class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:border-cyan-500">
+                            <option value="all">Cụm: Tất cả</option>
+                            <option value="nền tảng kế toán lõi">Nền tảng kế toán lõi</option>
+                            <option value="vận hành chứng từ">Vận hành chứng từ</option>
+                            <option value="thuế và hóa đơn">Thuế và hóa đơn</option>
+                            <option value="công nợ và đối soát">Công nợ và đối soát</option>
+                            <option value="chốt kỳ và kiểm soát">Chốt kỳ và kiểm soát</option>
+                            <option value="kiểm toán nội bộ">Kiểm toán nội bộ</option>
+                        </select>
+                        <button id="pm-filter-reset" type="button" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg font-medium transition-all">Đặt lại bộ lọc</button>
+                    </div>
+                </section>
+
+                <section class="glassmorphism rounded-xl p-6 mb-6">
+                    <h3 class="text-lg font-semibold mb-3">KPI theo bộ lọc</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                        <div class="rounded-lg border border-slate-700 bg-slate-800/60 p-4">
+                            <p class="text-slate-400">Đầu việc hiển thị</p>
+                            <p id="pm-kpi-visible" class="text-2xl font-bold text-cyan-300 mt-1">0</p>
+                        </div>
+                        <div class="rounded-lg border border-slate-700 bg-slate-800/60 p-4">
+                            <p class="text-slate-400">Nhóm P1</p>
+                            <p id="pm-kpi-p1" class="text-2xl font-bold text-rose-300 mt-1">0</p>
+                        </div>
+                        <div class="rounded-lg border border-slate-700 bg-slate-800/60 p-4">
+                            <p class="text-slate-400">Ước lượng</p>
+                            <p id="pm-kpi-md" class="text-2xl font-bold text-emerald-300 mt-1">0 MD</p>
+                        </div>
+                        <div class="rounded-lg border border-slate-700 bg-slate-800/60 p-4">
+                            <p class="text-slate-400">Mức sẵn sàng</p>
+                            <p class="text-2xl font-bold text-amber-300 mt-1">70/100</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="glassmorphism rounded-xl overflow-hidden mb-6">
+                    <div class="p-6 border-b border-slate-700">
+                        <h3 class="text-lg font-semibold">Bảng phân rã chi tiết theo chức năng</h3>
+                        <p class="text-sm text-slate-400 mt-1">Hỗ trợ tìm kiếm, lọc và thống kê realtime theo dữ liệu hiển thị.</p>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-slate-800 text-slate-200">
+                                <tr>
+                                    <th class="text-left p-4 font-semibold min-w-[180px]">Chức năng</th>
+                                    <th class="text-left p-4 font-semibold min-w-[210px]">Cụm</th>
+                                    <th class="text-left p-4 font-semibold min-w-[340px]">Đầu việc cần làm</th>
+                                    <th class="text-left p-4 font-semibold min-w-[240px]">Đầu ra/Nghiệm thu</th>
+                                    <th class="text-left p-4 font-semibold min-w-[100px]">Ưu tiên</th>
+                                    <th class="text-left p-4 font-semibold min-w-[140px]">Trạng thái</th>
+                                    <th class="text-left p-4 font-semibold min-w-[90px]">MD</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pm-task-table" class="divide-y divide-slate-700">
+                                <tr class="pm-task-row" data-priority="P1" data-status="Cần nâng cấp" data-cluster="Nền tảng kế toán lõi" data-md="8" data-search="danh mục tài khoản chuẩn hóa cây tài khoản">
+                                    <td class="p-4"><a href="dev-ba-spec.html#fn-3-1" class="text-cyan-300 hover:text-cyan-200 underline">Danh mục tài khoản</a></td>
+                                    <td class="p-4">Nền tảng kế toán lõi</td>
+                                    <td class="p-4">Chuẩn hóa cây tài khoản cha-con, ràng buộc mã trùng, khóa sửa tài khoản đã phát sinh.</td>
+                                    <td class="p-4">Tài khoản dùng thống nhất trên toàn bộ chứng từ.</td>
+                                    <td class="p-4"><span class="rounded-full bg-rose-900/40 px-2.5 py-1 text-rose-300">P1</span></td>
+                                    <td class="p-4">Cần nâng cấp</td>
+                                    <td class="p-4">8</td>
+                                </tr>
+                                <tr class="pm-task-row" data-priority="P1" data-status="Đang thực hiện" data-cluster="Chốt kỳ và kiểm soát" data-md="7" data-search="mở sổ khóa sổ ngày khóa theo tháng">
+                                    <td class="p-4"><a href="dev-ba-spec.html#fn-3-2" class="text-cyan-300 hover:text-cyan-200 underline">Mở sổ/Khóa sổ</a></td>
+                                    <td class="p-4">Chốt kỳ và kiểm soát</td>
+                                    <td class="p-4">Thiết lập ngày khóa theo tháng, phân quyền mở khóa, audit log thao tác mở khóa.</td>
+                                    <td class="p-4">Kỳ đã khóa không bị thay đổi trái phép.</td>
+                                    <td class="p-4"><span class="rounded-full bg-rose-900/40 px-2.5 py-1 text-rose-300">P1</span></td>
+                                    <td class="p-4">Đang thực hiện</td>
+                                    <td class="p-4">7</td>
+                                </tr>
+                                <tr class="pm-task-row" data-priority="P1" data-status="Đang thực hiện" data-cluster="Vận hành chứng từ" data-md="20" data-search="thu chi nhập xuất hạch toán định khoản">
+                                    <td class="p-4"><a href="dev-ba-spec.html#fn-3-10" class="text-cyan-300 hover:text-cyan-200 underline">Thu/Chi/Nhập/Xuất</a></td>
+                                    <td class="p-4">Vận hành chứng từ</td>
+                                    <td class="p-4">Hoàn thiện matrix định khoản, validate theo loại phiếu, đối chiếu doanh thu-giá vốn-VAT.</td>
+                                    <td class="p-4">Mỗi phiếu sinh đúng bút toán Nợ/Có.</td>
+                                    <td class="p-4"><span class="rounded-full bg-rose-900/40 px-2.5 py-1 text-rose-300">P1</span></td>
+                                    <td class="p-4">Đang thực hiện</td>
+                                    <td class="p-4">20</td>
+                                </tr>
+                                <tr class="pm-task-row" data-priority="P1" data-status="Cần nâng cấp" data-cluster="Nền tảng kế toán lõi" data-md="12" data-search="sổ nhật ký sổ chi tiết trial balance bảng cân đối">
+                                    <td class="p-4"><a href="dev-ba-spec.html#fn-3-3" class="text-cyan-300 hover:text-cyan-200 underline">Sổ sách lõi</a></td>
+                                    <td class="p-4">Nền tảng kế toán lõi</td>
+                                    <td class="p-4">Nâng cấp Sổ nhật ký, Sổ chi tiết, Sổ cái, Trial Balance, Bảng cân đối kế toán.</td>
+                                    <td class="p-4">Số liệu khớp tuyệt đối giữa các báo cáo.</td>
+                                    <td class="p-4"><span class="rounded-full bg-rose-900/40 px-2.5 py-1 text-rose-300">P1</span></td>
+                                    <td class="p-4">Cần nâng cấp</td>
+                                    <td class="p-4">12</td>
+                                </tr>
+                                <tr class="pm-task-row" data-priority="P1" data-status="Chưa triển khai" data-cluster="Vận hành chứng từ" data-md="9" data-search="maker checker approver đánh số chứng từ">
+                                    <td class="p-4"><a href="dev-ba-spec.html#fn-3-16" class="text-cyan-300 hover:text-cyan-200 underline">Workflow duyệt + số CT</a></td>
+                                    <td class="p-4">Vận hành chứng từ</td>
+                                    <td class="p-4">Thiết kế Maker-Checker-Approver, kiểm soát số chứng từ liên tục, không cho sửa số đã phát hành.</td>
+                                    <td class="p-4">Tăng kiểm soát nội bộ và truy vết giao dịch.</td>
+                                    <td class="p-4"><span class="rounded-full bg-rose-900/40 px-2.5 py-1 text-rose-300">P1</span></td>
+                                    <td class="p-4">Chưa triển khai</td>
+                                    <td class="p-4">9</td>
+                                </tr>
+                                <tr class="pm-task-row" data-priority="P1" data-status="Chưa triển khai" data-cluster="Công nợ và đối soát" data-md="6" data-search="đối chiếu ngân hàng sao kê 112">
+                                    <td class="p-4"><a href="dev-ba-spec.html#fn-3-9" class="text-cyan-300 hover:text-cyan-200 underline">Đối chiếu ngân hàng</a></td>
+                                    <td class="p-4">Công nợ và đối soát</td>
+                                    <td class="p-4">Nhập sao kê, match giao dịch với sổ 112, xử lý khoản treo/chưa khớp.</td>
+                                    <td class="p-4">Số dư ngân hàng khớp sao kê trước khóa kỳ.</td>
+                                    <td class="p-4"><span class="rounded-full bg-rose-900/40 px-2.5 py-1 text-rose-300">P1</span></td>
+                                    <td class="p-4">Chưa triển khai</td>
+                                    <td class="p-4">6</td>
+                                </tr>
+                                <tr class="pm-task-row" data-priority="P1" data-status="Chưa triển khai" data-cluster="Thuế và hóa đơn" data-md="8" data-search="vat đầu vào đầu ra khấu trừ">
+                                    <td class="p-4"><a href="dev-ba-spec.html#fn-3-14" class="text-cyan-300 hover:text-cyan-200 underline">VAT đầu vào/đầu ra</a></td>
+                                    <td class="p-4">Thuế và hóa đơn</td>
+                                    <td class="p-4">Bổ sung rule VAT đủ/không đủ điều kiện khấu trừ, đối chiếu chỉ tiêu VAT theo kỳ.</td>
+                                    <td class="p-4">Giảm rủi ro sai kê khai thuế.</td>
+                                    <td class="p-4"><span class="rounded-full bg-rose-900/40 px-2.5 py-1 text-rose-300">P1</span></td>
+                                    <td class="p-4">Chưa triển khai</td>
+                                    <td class="p-4">8</td>
+                                </tr>
+                                <tr class="pm-task-row" data-priority="P1" data-status="Chưa triển khai" data-cluster="Kiểm toán nội bộ" data-md="7" data-search="audit trail before after user lý do sửa">
+                                    <td class="p-4"><a href="dev-ba-spec.html#fn-3-9" class="text-cyan-300 hover:text-cyan-200 underline">Audit trail bất biến</a></td>
+                                    <td class="p-4">Kiểm toán nội bộ</td>
+                                    <td class="p-4">Lưu before/after, user, thời gian, lý do; không cho xóa log.</td>
+                                    <td class="p-4">Đáp ứng yêu cầu kiểm toán nội bộ.</td>
+                                    <td class="p-4"><span class="rounded-full bg-rose-900/40 px-2.5 py-1 text-rose-300">P1</span></td>
+                                    <td class="p-4">Chưa triển khai</td>
+                                    <td class="p-4">7</td>
+                                </tr>
+                                <tr class="pm-task-row" data-priority="P2" data-status="Chưa hoàn tất" data-cluster="Công nợ và đối soát" data-md="13" data-search="công nợ khách hàng nhà cung cấp tuổi nợ">
+                                    <td class="p-4"><a href="dev-ba-spec.html#fn-3-7" class="text-cyan-300 hover:text-cyan-200 underline">Công nợ KH/NCC</a></td>
+                                    <td class="p-4">Công nợ và đối soát</td>
+                                    <td class="p-4">Bổ sung tuổi nợ, hạn thanh toán, cảnh báo quá hạn, queue sai lệch và workflow xử lý.</td>
+                                    <td class="p-4">Báo cáo 131/331 chi tiết theo đối tượng.</td>
+                                    <td class="p-4"><span class="rounded-full bg-amber-900/40 px-2.5 py-1 text-amber-300">P2</span></td>
+                                    <td class="p-4">Chưa hoàn tất</td>
+                                    <td class="p-4">13</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="glassmorphism rounded-xl p-6">
+                        <h3 class="text-lg font-semibold mb-3">Rủi ro chính</h3>
+                        <ul class="list-disc list-inside text-sm text-slate-300 space-y-2">
+                            <li>Thay đổi phạm vi giữa sprint làm trễ tiến độ.</li>
+                            <li>Chưa chốt rule nghiệp vụ dẫn đến sai định khoản.</li>
+                            <li>Lệch dữ liệu kho/chứng từ/sổ sách nếu thiếu đối soát cuối kỳ.</li>
+                        </ul>
+                    </div>
+                    <div class="glassmorphism rounded-xl p-6">
+                        <h3 class="text-lg font-semibold mb-3">Hành động ưu tiên tuần này</h3>
+                        <ol class="list-decimal list-inside text-sm text-slate-300 space-y-2">
+                            <li>Chốt matrix định khoản cho Thu/Chi/Nhập/Xuất.</li>
+                            <li>Đóng băng phạm vi P1 của sprint hiện tại.</li>
+                            <li>Chạy test đối chiếu tự động cho Nhật ký - Sổ chi tiết - Bảng cân đối.</li>
+                            <li>Chốt quy trình mở khóa kỳ có phân quyền và lưu log.</li>
+                        </ol>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script src="../app.js"></script>
+    <script>
+        function normalizeText(value) {
+            return (value || '').toString().trim().toLowerCase();
+        }
+
+        function applyPmFilters() {
+            const search = normalizeText(document.getElementById('pm-filter-search')?.value);
+            const priority = normalizeText(document.getElementById('pm-filter-priority')?.value || 'all');
+            const status = normalizeText(document.getElementById('pm-filter-status')?.value || 'all');
+            const cluster = normalizeText(document.getElementById('pm-filter-cluster')?.value || 'all');
+
+            const rows = Array.from(document.querySelectorAll('.pm-task-row'));
+            let visible = 0;
+            let p1 = 0;
+            let md = 0;
+
+            rows.forEach(row => {
+                const rp = normalizeText(row.dataset.priority);
+                const rs = normalizeText(row.dataset.status);
+                const rc = normalizeText(row.dataset.cluster);
+                const rt = normalizeText(row.dataset.search);
+
+                const show =
+                    (!search || rt.includes(search)) &&
+                    (priority === 'all' || rp === normalizeText(priority)) &&
+                    (status === 'all' || rs === normalizeText(status)) &&
+                    (cluster === 'all' || rc === normalizeText(cluster));
+
+                row.style.display = show ? '' : 'none';
+                if (show) {
+                    visible += 1;
+                    if (rp === 'p1') p1 += 1;
+                    md += Number(row.dataset.md || 0);
+                }
+            });
+
+            const visibleEl = document.getElementById('pm-kpi-visible');
+            const p1El = document.getElementById('pm-kpi-p1');
+            const mdEl = document.getElementById('pm-kpi-md');
+            if (visibleEl) visibleEl.textContent = String(visible);
+            if (p1El) p1El.textContent = String(p1);
+            if (mdEl) mdEl.textContent = `${md} MD`;
+        }
+
+        function resetPmFilters() {
+            const search = document.getElementById('pm-filter-search');
+            const priority = document.getElementById('pm-filter-priority');
+            const status = document.getElementById('pm-filter-status');
+            const cluster = document.getElementById('pm-filter-cluster');
+            if (search) search.value = '';
+            if (priority) priority.value = 'all';
+            if (status) status.value = 'all';
+            if (cluster) cluster.value = 'all';
+            applyPmFilters();
+        }
+
+        function bindPmEvents() {
+            ['pm-filter-search', 'pm-filter-priority', 'pm-filter-status', 'pm-filter-cluster'].forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.addEventListener('input', applyPmFilters);
+                el.addEventListener('change', applyPmFilters);
+            });
+            const resetBtn = document.getElementById('pm-filter-reset');
+            if (resetBtn) resetBtn.addEventListener('click', resetPmFilters);
+        }
+
+        window.addEventListener('load', () => {
+            bindPmEvents();
+            applyPmFilters();
+        });
+    </script>
+</body>
+</html>

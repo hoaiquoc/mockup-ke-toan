@@ -143,7 +143,7 @@
                         <div class="space-y-4">
                             <div>
                                 <label class="block text-sm mb-2">Tháng</label>
-                                <select id="lock-month" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none">
+                                <select id="lock-month" onchange="onLockPeriodSelectionChange()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none">
                                     <option value="1">Tháng 1</option>
                                     <option value="2">Tháng 2</option>
                                     <option value="3">Tháng 3</option>
@@ -160,7 +160,42 @@
                             </div>
                             <div>
                                 <label class="block text-sm mb-2">Năm</label>
-                                <input type="number" id="lock-year" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none" value="2024">
+                                <input type="number" id="lock-year" onchange="onLockPeriodSelectionChange()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none" value="2024">
+                            </div>
+                            <div class="pt-2 border-t border-slate-700/60">
+                                <h4 class="text-sm font-semibold text-pink-300 mb-3">Cấu hình ngày khóa sổ</h4>
+                                <div>
+                                    <label class="block text-sm mb-2">Khóa dữ liệu đến ngày</label>
+                                    <input type="date" id="lock-config-date" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none">
+                                </div>
+                                <button onclick="applyMonthlyDefaultLockDate()" class="w-full mt-3 bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                                    Lấy theo mặc định tháng đang chọn
+                                </button>
+                                <div class="grid grid-cols-2 gap-3 mt-3">
+                                    <button onclick="saveLockDateConfig()" class="bg-pink-600 hover:bg-pink-700 px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                                        Lưu cấu hình
+                                    </button>
+                                    <button onclick="clearLockDateConfig()" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                                        Xóa cấu hình
+                                    </button>
+                                </div>
+                                <div id="lock-config-status" class="mt-3 text-xs text-slate-400"></div>
+                            </div>
+                            <div class="pt-2 border-t border-slate-700/60">
+                                <h4 class="text-sm font-semibold text-cyan-300 mb-3">Ngày khóa sổ cố định hàng tháng</h4>
+                                <div>
+                                    <label class="block text-sm mb-2 text-slate-400">Ngày mặc định (1-31)</label>
+                                    <input type="number" id="lock-default-day" min="1" max="31" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 focus:outline-none" placeholder="Ví dụ: 5">
+                                </div>
+                                <div class="grid grid-cols-2 gap-3 mt-3">
+                                    <button onclick="saveMonthlyLockDayConfig()" class="bg-cyan-600 hover:bg-cyan-700 px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                                        Lưu ngày cố định
+                                    </button>
+                                    <button onclick="clearMonthlyLockDayConfig()" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                                        Xóa ngày cố định
+                                    </button>
+                                </div>
+                                <p class="mt-2 text-xs text-slate-400">Ngày này sẽ áp dụng cho tất cả tháng. Nếu tháng có ít ngày hơn, hệ thống tự lấy ngày cuối tháng.</p>
                             </div>
                             <div class="pt-4 space-y-3">
                                 <button onclick="lockPeriod()" class="w-full bg-pink-600 hover:bg-pink-700 px-6 py-3 rounded-lg font-medium transition-all">

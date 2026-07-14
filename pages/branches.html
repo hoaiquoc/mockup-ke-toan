@@ -69,26 +69,78 @@
                 </div>
 
                 <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                    <div class="xl:col-span-1 glassmorphism rounded-xl p-6">
-                        <h3 class="text-lg font-semibold mb-4">Thêm chi nhánh mới</h3>
-                        <form id="form-add-branch" class="space-y-4">
-                            <div>
-                                <label class="block text-sm mb-2">Tên chi nhánh</label>
-                                <input type="text" id="branch-name" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:border-cyan-500" placeholder="Ví dụ: Chi nhánh Quận 7">
+                    <div class="xl:col-span-1 space-y-6">
+                        <div class="glassmorphism rounded-xl p-6">
+                            <h3 class="text-lg font-semibold mb-4">Thêm chi nhánh mới</h3>
+                            <form id="form-add-branch" class="space-y-4">
+                                <div>
+                                    <label class="block text-sm mb-2">Tên chi nhánh</label>
+                                    <input type="text" id="branch-name" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:border-cyan-500" placeholder="Ví dụ: Chi nhánh Quận 7">
+                                </div>
+                                <div>
+                                    <label class="block text-sm mb-2">Địa chỉ</label>
+                                    <input type="text" id="branch-address" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:border-cyan-500" placeholder="Ví dụ: 123 Nguyễn Huệ, Quận 1">
+                                </div>
+                                <div>
+                                    <label class="block text-sm mb-2">Chế độ hạch toán</label>
+                                    <select id="branch-mode" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:border-cyan-500">
+                                        <option value="chung">Hạch toán chung (dùng chung bộ tài khoản)</option>
+                                        <option value="doc_lap">Hạch toán độc lập (theo chi nhánh)</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="w-full bg-cyan-600 hover:bg-cyan-700 py-3 rounded-lg font-semibold transition-all">Lưu chi nhánh</button>
+                            </form>
+                        </div>
+
+                        <div class="glassmorphism rounded-xl p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <div>
+                                    <h3 class="text-lg font-semibold">Cấu hình nghiệp vụ kế toán</h3>
+                                    <p class="text-sm text-slate-400">Bật/tắt các nghiệp vụ kế toán cho từng chi nhánh.</p>
+                                </div>
                             </div>
-                            <div>
-                                <label class="block text-sm mb-2">Địa chỉ</label>
-                                <input type="text" id="branch-address" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:border-cyan-500" placeholder="Ví dụ: 123 Nguyễn Huệ, Quận 1">
-                            </div>
-                            <div>
-                                <label class="block text-sm mb-2">Chế độ hạch toán</label>
-                                <select id="branch-mode" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:border-cyan-500">
-                                    <option value="chung">Hạch toán chung (dùng chung bộ tài khoản)</option>
-                                    <option value="doc_lap">Hạch toán độc lập (theo chi nhánh)</option>
-                                </select>
-                            </div>
-                            <button type="submit" class="w-full bg-cyan-600 hover:bg-cyan-700 py-3 rounded-lg font-semibold transition-all">Lưu chi nhánh</button>
-                        </form>
+                            <form id="form-branch-accounting-config" class="space-y-4">
+                                <div>
+                                    <label class="block text-sm mb-2">Chọn chi nhánh</label>
+                                    <select id="branch-config-select" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:border-cyan-500"></select>
+                                </div>
+                                <div class="grid grid-cols-1 gap-3">
+                                    <label class="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-800/60 px-3 py-2">
+                                        <span>Cho phép lập phiếu thu</span>
+                                        <input id="branch-config-receipt" type="checkbox" class="h-4 w-4 rounded border-slate-600 bg-slate-900 text-cyan-500 focus:ring-cyan-500">
+                                    </label>
+                                    <label class="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-800/60 px-3 py-2">
+                                        <span>Cho phép lập phiếu chi</span>
+                                        <input id="branch-config-payment" type="checkbox" class="h-4 w-4 rounded border-slate-600 bg-slate-900 text-cyan-500 focus:ring-cyan-500">
+                                    </label>
+                                    <label class="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-800/60 px-3 py-2">
+                                        <span>Cho phép quản lý kho</span>
+                                        <input id="branch-config-inventory" type="checkbox" class="h-4 w-4 rounded border-slate-600 bg-slate-900 text-cyan-500 focus:ring-cyan-500">
+                                    </label>
+                                    <label class="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-800/60 px-3 py-2">
+                                        <span>Cho phép quản lý TSCĐ</span>
+                                        <input id="branch-config-fixed-assets" type="checkbox" class="h-4 w-4 rounded border-slate-600 bg-slate-900 text-cyan-500 focus:ring-cyan-500">
+                                    </label>
+                                    <label class="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-800/60 px-3 py-2">
+                                        <span>Cho phép kết chuyển cuối kỳ</span>
+                                        <input id="branch-config-closing" type="checkbox" class="h-4 w-4 rounded border-slate-600 bg-slate-900 text-cyan-500 focus:ring-cyan-500">
+                                    </label>
+                                    <label class="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-800/60 px-3 py-2">
+                                        <span>Cho phép khóa sổ</span>
+                                        <input id="branch-config-lock-period" type="checkbox" class="h-4 w-4 rounded border-slate-600 bg-slate-900 text-cyan-500 focus:ring-cyan-500">
+                                    </label>
+                                </div>
+                                <div>
+                                    <label class="block text-sm mb-2">Thuế GTGT mặc định (%)</label>
+                                    <input id="branch-config-vat-rate" type="number" min="0" max="100" step="1" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:border-cyan-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm mb-2">Ghi chú</label>
+                                    <textarea id="branch-config-notes" rows="3" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:border-cyan-500" placeholder="Ví dụ: Chi nhánh dùng chung biểu mẫu thuế..."></textarea>
+                                </div>
+                                <button type="submit" class="w-full bg-cyan-600 hover:bg-cyan-700 py-3 rounded-lg font-semibold transition-all">Lưu cấu hình</button>
+                            </form>
+                        </div>
                     </div>
 
                     <div class="xl:col-span-2 glassmorphism rounded-xl p-6">
@@ -106,6 +158,7 @@
                                         <th class="text-left p-4 font-semibold">Tên chi nhánh</th>
                                         <th class="text-left p-4 font-semibold">Địa chỉ</th>
                                         <th class="text-left p-4 font-semibold">Chế độ</th>
+                                        <th class="text-left p-4 font-semibold">Nghiệp vụ</th>
                                     </tr>
                                 </thead>
                                 <tbody id="branches-table"></tbody>

@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dev Spec - Kế Toán Dễ Dàng</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../styles.css">
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen" data-page-module="dev-ba-spec">
+    <div class="flex h-screen">
+        <aside class="w-64 glassmorphism border-r border-slate-700 flex flex-col">
+            <div class="p-6 border-b border-slate-700">
+                <h1 class="text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">Kế Toán Dễ Dàng</h1>
+                <p class="text-xs text-slate-400 mt-1">Dành cho người mới</p>
+            </div>
+            <nav class="flex-1 p-4 space-y-2 overflow-auto"></nav>
+        </aside>
+
+        <main class="flex-1 overflow-auto p-6">
+            <div id="module-dev-ba-spec" class="module hidden fade-in">
+                <header class="mb-6">
+                    <h2 class="text-3xl font-bold text-sky-300">Dev Spec Triển Khai Ngay</h2>
+                    <p class="text-slate-400 mt-2">Trang đặc tả kỹ thuật cho Dev: đủ chức năng, đủ ví dụ, đủ rule để nhìn vào là code liền không cần hỏi thêm.</p>
+                </header>
+
+                <section class="glassmorphism rounded-xl p-6 mb-6">
+                    <h3 class="text-lg font-semibold mb-3">Chuẩn bắt buộc toàn hệ thống</h3>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 text-sm">
+                        <div class="rounded-lg border border-slate-700 bg-slate-800/60 p-4">
+                            <p class="font-semibold text-cyan-300 mb-2">Chuẩn dữ liệu</p>
+                            <ul class="list-disc list-inside space-y-1 text-slate-300">
+                                <li>Tiền tệ lưu số nguyên theo đồng.</li>
+                                <li>Ngày giờ lưu UTC, hiển thị múi giờ VN.</li>
+                                <li>Payload ghi dữ liệu có requestId.</li>
+                                <li>Dữ liệu kỳ khóa không được sửa/xóa.</li>
+                            </ul>
+                        </div>
+                        <div class="rounded-lg border border-slate-700 bg-slate-800/60 p-4">
+                            <p class="font-semibold text-emerald-300 mb-2">Chuẩn lỗi API</p>
+                            <ul class="list-disc list-inside space-y-1 text-slate-300">
+                                <li>ACC_PERIOD_LOCKED: kỳ đã khóa.</li>
+                                <li>ACC_INVALID_ACCOUNT: tài khoản sai.</li>
+                                <li>ACC_UNBALANCED_JE: lệch Nợ/Có.</li>
+                                <li>ACC_DUPLICATE_NUMBER: trùng số.</li>
+                            </ul>
+                        </div>
+                        <div class="rounded-lg border border-slate-700 bg-slate-800/60 p-4">
+                            <p class="font-semibold text-amber-300 mb-2">Quy trình post chứng từ</p>
+                            <ol class="list-decimal list-inside space-y-1 text-slate-300">
+                                <li>Validate payload + quyền + kỳ.</li>
+                                <li>Build journal lines.</li>
+                                <li>Check cân Nợ/Có.</li>
+                                <li>Ghi DB trong transaction.</li>
+                                <li>Ghi audit log.</li>
+                            </ol>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="glassmorphism rounded-xl p-6 mb-6">
+                    <div class="flex items-center justify-between gap-4 mb-3">
+                        <h3 class="text-lg font-semibold">Bảng 17 chức năng để giao việc code</h3>
+                        <input id="spec-filter" type="text" placeholder="Tìm theo chức năng, API, rule" class="w-full max-w-sm bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-cyan-500">
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-slate-800 text-slate-200">
+                                <tr>
+                                    <th class="text-left p-4 font-semibold min-w-[220px]">Chức năng</th>
+                                    <th class="text-left p-4 font-semibold min-w-[280px]">API chính</th>
+                                    <th class="text-left p-4 font-semibold min-w-[340px]">Rule nghiệp vụ</th>
+                                    <th class="text-left p-4 font-semibold min-w-[160px]">Nghiệm thu nhanh</th>
+                                </tr>
+                            </thead>
+                            <tbody id="spec-table" class="divide-y divide-slate-700 text-slate-300">
+                                <tr id="fn-3-1" class="spec-row" data-search="3.1 danh mục tài khoản get accounts tree post accounts put accounts code trùng">
+                                    <td class="p-4">3.1 Danh mục tài khoản</td>
+                                    <td class="p-4 font-mono text-xs">GET /api/accounts/tree; POST /api/accounts; PUT /api/accounts/{id}</td>
+                                    <td class="p-4">Không trùng mã; không đổi mã khi đã phát sinh; tài khoản cha không post trực tiếp.</td>
+                                    <td class="p-4">Tạo/sửa/chặn trùng đúng.</td>
+                                </tr>
+                                <tr id="fn-3-2" class="spec-row" data-search="3.2 mở sổ khóa sổ lock unlock period chief accountant reason">
+                                    <td class="p-4">3.2 Mở sổ và khóa sổ</td>
+                                    <td class="p-4 font-mono text-xs">POST /api/periods/{year}/{month}/lock; POST /api/periods/{year}/{month}/unlock</td>
+                                    <td class="p-4">Chỉ kế toán trưởng unlock; bắt buộc lý do; kỳ khóa chặn mọi ghi dữ liệu.</td>
+                                    <td class="p-4">Chặn ghi kỳ khóa đúng.</td>
+                                </tr>
+                                <tr id="fn-3-3" class="spec-row" data-search="3.3 sổ nhật ký journal paging export">
+                                    <td class="p-4">3.3 Sổ nhật ký chung</td>
+                                    <td class="p-4 font-mono text-xs">GET /api/reports/journal; GET /api/reports/journal/export</td>
+                                    <td class="p-4">Lọc theo ngày, loại chứng từ, chi nhánh, tài khoản; có paging và export.</td>
+                                    <td class="p-4">Dữ liệu và export khớp.</td>
+                                </tr>
+                                <tr id="fn-3-4" class="spec-row" data-search="3.4 sổ chi tiết ledger ending opening debit credit drill down">
+                                    <td class="p-4">3.4 Sổ chi tiết tài khoản</td>
+                                    <td class="p-4 font-mono text-xs">GET /api/reports/ledger</td>
+                                    <td class="p-4">ending = opening + debit - credit; drill-down về chứng từ gốc.</td>
+                                    <td class="p-4">Công thức đúng tuyệt đối.</td>
+                                </tr>
+                                <tr id="fn-3-5" class="spec-row" data-search="3.5 bảng cân đối balance sheet mapping assets liabilities">
+                                    <td class="p-4">3.5 Bảng cân đối kế toán</td>
+                                    <td class="p-4 font-mono text-xs">GET /api/reports/balance-sheet</td>
+                                    <td class="p-4">Cấu hình mapping account chỉ tiêu; cảnh báo lệch tài sản và nguồn vốn.</td>
+                                    <td class="p-4">Hiển thị cảnh báo đúng.</td>
+                                </tr>
+                                <tr id="fn-3-6" class="spec-row" data-search="3.6 kết chuyển closing run reverse idempotent">
+                                    <td class="p-4">3.6 Kết chuyển cuối kỳ</td>
+                                    <td class="p-4 font-mono text-xs">POST /api/closing/run; POST /api/closing/reverse</td>
+                                    <td class="p-4">Chống chạy lặp; chỉ chạy khi backlog chứng từ chưa hạch toán bằng 0.</td>
+                                    <td class="p-4">Run 2 lần không tạo trùng.</td>
+                                </tr>
+                                <tr id="fn-3-7" class="spec-row" data-search="3.7 131 ar aging statement">
+                                    <td class="p-4">3.7 Công nợ khách hàng 131</td>
+                                    <td class="p-4 font-mono text-xs">GET /api/ar/aging; GET /api/ar/statement</td>
+                                    <td class="p-4">Tính opening, phát sinh, closing; bucket tuổi nợ 0-30, 31-60, 61-90, lớn hơn 90.</td>
+                                    <td class="p-4">Khớp hóa đơn và thu nợ.</td>
+                                </tr>
+                                <tr id="fn-3-8" class="spec-row" data-search="3.8 331 ap aging statement">
+                                    <td class="p-4">3.8 Công nợ nhà cung cấp 331</td>
+                                    <td class="p-4 font-mono text-xs">GET /api/ap/aging; GET /api/ap/statement</td>
+                                    <td class="p-4">Có đối trừ công nợ; khớp với phiếu chi và hóa đơn mua.</td>
+                                    <td class="p-4">Khớp số 331 cuối kỳ.</td>
+                                </tr>
+                                <tr id="fn-3-9" class="spec-row" data-search="3.9 đối soát reconciliation issues resolve">
+                                    <td class="p-4">3.9 Đối soát</td>
+                                    <td class="p-4 font-mono text-xs">POST /api/reconciliation/run; GET /api/reconciliation/issues</td>
+                                    <td class="p-4">Bắt lệch kho, công nợ, VAT, nhật ký và sổ chi tiết; issue có workflow xử lý.</td>
+                                    <td class="p-4">Tạo và đóng issue đúng.</td>
+                                </tr>
+                                <tr id="fn-3-10" class="spec-row" data-search="3.10 phiếu thu receipt post">
+                                    <td class="p-4">3.10 Hạch toán chứng từ thu</td>
+                                    <td class="p-4 font-mono text-xs">POST /api/vouchers/receipt</td>
+                                    <td class="p-4">Không cho postingDate trong kỳ khóa; tổng phiếu bằng tổng dòng bút toán.</td>
+                                    <td class="p-4">Nợ 111 hoặc 112, Có 131.</td>
+                                </tr>
+                                <tr id="fn-3-11" class="spec-row" data-search="3.11 phiếu chi payment post">
+                                    <td class="p-4">3.11 Hạch toán chứng từ chi</td>
+                                    <td class="p-4 font-mono text-xs">POST /api/vouchers/payment</td>
+                                    <td class="p-4">Validate đối tượng nhận chi và hạn mức chi.</td>
+                                    <td class="p-4">Nợ 331, Có 111 hoặc 112.</td>
+                                </tr>
+                                <tr id="fn-3-12" class="spec-row" data-search="3.12 nhập kho purchase receipt vat 1331">
+                                    <td class="p-4">3.12 Hạch toán chứng từ nhập</td>
+                                    <td class="p-4 font-mono text-xs">POST /api/vouchers/purchase-receipt</td>
+                                    <td class="p-4">Cập nhật tồn kho và bút toán đồng bộ; VAT đầu vào tách 1331.</td>
+                                    <td class="p-4">Nợ 156, 1331; Có 331.</td>
+                                </tr>
+                                <tr id="fn-3-13" class="spec-row" data-search="3.13 xuất kho sales issue cogs chặn âm kho">
+                                    <td class="p-4">3.13 Hạch toán chứng từ xuất</td>
+                                    <td class="p-4 font-mono text-xs">POST /api/vouchers/sales-issue</td>
+                                    <td class="p-4">Sinh 2 cặp bút toán doanh thu và giá vốn; bắt buộc chặn âm kho.</td>
+                                    <td class="p-4">Khớp 511, 33311, 632, 156.</td>
+                                </tr>
+                                <tr id="fn-3-14" class="spec-row" data-search="3.14 hóa đơn mua purchase invoices link voucher">
+                                    <td class="p-4">3.14 Hóa đơn mua vào</td>
+                                    <td class="p-4 font-mono text-xs">POST /api/purchase-invoices; POST /api/purchase-invoices/{id}/link-voucher</td>
+                                    <td class="p-4">Không trùng số hóa đơn theo NCC và ngày; có trạng thái new, linked, posted.</td>
+                                    <td class="p-4">Đối chiếu đúng 1331 và 331.</td>
+                                </tr>
+                                <tr id="fn-3-15" class="spec-row" data-search="3.15 hóa đơn bán sales invoices link voucher thanh toán">
+                                    <td class="p-4">3.15 Hóa đơn bán ra</td>
+                                    <td class="p-4 font-mono text-xs">POST /api/sales-invoices; POST /api/sales-invoices/{id}/link-voucher</td>
+                                    <td class="p-4">Số hóa đơn duy nhất theo mẫu; trạng thái unpaid, partial, paid.</td>
+                                    <td class="p-4">Khớp 511, 33311, 131.</td>
+                                </tr>
+                                <tr id="fn-3-16" class="spec-row" data-search="3.16 chứng từ chưa hạch toán unposted backlog assign post">
+                                    <td class="p-4">3.16 Danh sách chứng từ chưa hạch toán</td>
+                                    <td class="p-4 font-mono text-xs">GET /api/unposted-documents; POST /api/unposted-documents/{id}/post</td>
+                                    <td class="p-4">Tiêu chí unposted là chưa có journal entry hợp lệ; backlog phải về 0 trước khóa sổ.</td>
+                                    <td class="p-4">Chặn khóa sổ khi backlog lớn hơn 0.</td>
+                                </tr>
+                                <tr id="fn-3-17" class="spec-row" data-search="3.17 cấu hình kỳ accounting config default lock day">
+                                    <td class="p-4">3.17 Cấu hình kỳ kế toán</td>
+                                    <td class="p-4 font-mono text-xs">GET /api/accounting-config; PUT /api/accounting-config</td>
+                                    <td class="p-4">Một nguồn cấu hình duy nhất cho toàn hệ thống; có defaultLockDay cho khóa sổ theo tháng.</td>
+                                    <td class="p-4">Config đổi có hiệu lực toàn hệ.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="glassmorphism rounded-xl p-6 mb-6">
+                    <h3 class="text-lg font-semibold mb-3">Ví dụ code theo chức năng trọng yếu</h3>
+                    <div class="space-y-4 text-sm">
+                        <details class="rounded-lg border border-slate-700 bg-slate-800/60 p-4" open>
+                            <summary class="cursor-pointer font-semibold text-cyan-300">Ví dụ 3.10 Phiếu thu công nợ</summary>
+                            <div class="mt-3 space-y-2 text-slate-300">
+                                <p>Input API:</p>
+                                <pre class="bg-slate-900 rounded p-3 overflow-auto text-xs text-slate-200">{
+  "voucherDate": "2026-07-10",
+  "postingDate": "2026-07-10",
+  "customerId": "C001",
+  "lines": [
+    {"debitAccount": "1111", "creditAccount": "131", "amount": 50000000}
+  ]
+}</pre>
+                                <p>Expected journal:</p>
+                                <pre class="bg-slate-900 rounded p-3 overflow-auto text-xs text-slate-200">No 1111: 50,000,000
+Co 131 : 50,000,000</pre>
+                            </div>
+                        </details>
+
+                        <details class="rounded-lg border border-slate-700 bg-slate-800/60 p-4" open>
+                            <summary class="cursor-pointer font-semibold text-emerald-300">Ví dụ 3.12 Nhập kho có VAT đầu vào</summary>
+                            <div class="mt-3 space-y-2 text-slate-300">
+                                <p>Case: nhập hàng giá trước VAT 100, VAT 10, chưa thanh toán.</p>
+                                <pre class="bg-slate-900 rounded p-3 overflow-auto text-xs text-slate-200">No 156 : 100
+No 1331: 10
+Co 331 : 110</pre>
+                                <p>Điều kiện pass: tồn kho tăng đúng và bút toán cân.</p>
+                            </div>
+                        </details>
+
+                        <details class="rounded-lg border border-slate-700 bg-slate-800/60 p-4" open>
+                            <summary class="cursor-pointer font-semibold text-amber-300">Ví dụ 3.13 Xuất kho bán công nợ</summary>
+                            <div class="mt-3 space-y-2 text-slate-300">
+                                <p>Case: doanh thu trước VAT 150, VAT 10, giá vốn 90.</p>
+                                <pre class="bg-slate-900 rounded p-3 overflow-auto text-xs text-slate-200">No 131  : 165
+Co 511  : 150
+Co 33311: 15
+No 632  : 90
+Co 156  : 90</pre>
+                                <p>Điều kiện pass: chặn âm kho, đủ 2 cặp bút toán.</p>
+                            </div>
+                        </details>
+
+                        <details class="rounded-lg border border-slate-700 bg-slate-800/60 p-4">
+                            <summary class="cursor-pointer font-semibold text-rose-300">Ví dụ 3.2 Khóa sổ tháng</summary>
+                            <div class="mt-3 space-y-2 text-slate-300">
+                                <p>Request lock:</p>
+                                <pre class="bg-slate-900 rounded p-3 overflow-auto text-xs text-slate-200">{
+  "lockDate": "2026-07-05",
+  "reason": "Khóa sổ định kỳ"
+}</pre>
+                                <p>Expected: kỳ 07/2026 chuyển locked, API ghi chứng từ mới trả ACC_PERIOD_LOCKED.</p>
+                            </div>
+                        </details>
+                    </div>
+                </section>
+
+                <section class="glassmorphism rounded-xl p-6 mb-6">
+                    <h3 class="text-lg font-semibold mb-3">Ma trận giao việc Dev để chia task sprint</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-slate-800 text-slate-200">
+                                <tr>
+                                    <th class="text-left p-4 font-semibold min-w-[210px]">Nhóm</th>
+                                    <th class="text-left p-4 font-semibold min-w-[260px]">BE</th>
+                                    <th class="text-left p-4 font-semibold min-w-[260px]">FE</th>
+                                    <th class="text-left p-4 font-semibold min-w-[210px]">DB</th>
+                                    <th class="text-left p-4 font-semibold min-w-[180px]">QA</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-700 text-slate-300">
+                                <tr>
+                                    <td class="p-4">Nền tảng kế toán lõi</td>
+                                    <td class="p-4">Accounts, periods, journal, ledger, balance-sheet APIs</td>
+                                    <td class="p-4">Màn cây tài khoản, màn khóa sổ, nhật ký, sổ chi tiết, bảng cân đối</td>
+                                    <td class="p-4">Index account code, period month, journal posting date</td>
+                                    <td class="p-4">Test cân số và khóa kỳ</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-4">Vận hành chứng từ</td>
+                                    <td class="p-4">Receipt, payment, purchase-receipt, sales-issue services</td>
+                                    <td class="p-4">Form chứng từ nhiều dòng, validate tại client</td>
+                                    <td class="p-4">Voucher no index, journal lines index</td>
+                                    <td class="p-4">Test định khoản theo từng case</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-4">Công nợ và đối soát</td>
+                                    <td class="p-4">AR/AP aging, reconciliation run and resolve</td>
+                                    <td class="p-4">Báo cáo tuổi nợ, queue sai lệch</td>
+                                    <td class="p-4">Issue table, object index</td>
+                                    <td class="p-4">Test lệch dữ liệu và xử lý</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-4">Thuế và hóa đơn</td>
+                                    <td class="p-4">Purchase and sales invoices with link voucher</td>
+                                    <td class="p-4">Danh sách hóa đơn, trạng thái post</td>
+                                    <td class="p-4">Unique invoice composite key</td>
+                                    <td class="p-4">Test trùng số và đối chiếu VAT</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="glassmorphism rounded-xl p-6">
+                    <h3 class="text-lg font-semibold mb-3">Done Definition bắt buộc</h3>
+                    <ul class="list-disc list-inside text-sm text-slate-300 space-y-2">
+                        <li>Có API, validator, unit test service.</li>
+                        <li>Có migration/index DB đúng như đặc tả.</li>
+                        <li>Có audit log cho thao tác tạo, sửa, xóa, lock, unlock, run closing.</li>
+                        <li>Có integration test cho case thành công và case lỗi nghiệp vụ.</li>
+                        <li>Có test case kỳ khóa và test đối chiếu số liệu.</li>
+                        <li>Tài liệu ví dụ request, expected journal và lỗi trả về phải khớp code thực tế.</li>
+                    </ul>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script src="../app.js"></script>
+    <script>
+        function normalize(value) {
+            return (value || '').toString().trim().toLowerCase();
+        }
+
+        function filterSpecRows() {
+            const keyword = normalize(document.getElementById('spec-filter')?.value);
+            const rows = document.querySelectorAll('#spec-table .spec-row');
+            rows.forEach((row) => {
+                const search = normalize(row.dataset.search);
+                row.style.display = !keyword || search.includes(keyword) ? '' : 'none';
+            });
+        }
+
+        window.addEventListener('load', () => {
+            const filterInput = document.getElementById('spec-filter');
+            if (filterInput) filterInput.addEventListener('input', filterSpecRows);
+            filterSpecRows();
+        });
+    </script>
+</body>
+</html>

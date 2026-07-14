@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phân công nhân sự - Kế Toán Dễ Dàng</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../styles.css">
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen" data-page-module="team-allocation">
+    <div class="flex h-screen">
+        <aside class="w-64 glassmorphism border-r border-slate-700 flex flex-col">
+            <div class="p-6 border-b border-slate-700">
+                <h1 class="text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">Kế Toán Dễ Dàng</h1>
+                <p class="text-xs text-slate-400 mt-1">Dành cho người mới</p>
+            </div>
+            <nav class="flex-1 p-4 space-y-2 overflow-auto"></nav>
+        </aside>
+
+        <main class="flex-1 overflow-auto p-6">
+            <div id="module-team-allocation" class="module hidden fade-in">
+                <header class="mb-6">
+                    <h2 class="text-3xl font-bold text-orange-300">Phân rã công việc theo nhân sự</h2>
+                    <p class="text-slate-400 mt-2">Phân công cho Quốc, Thông, Trạng dựa trên bảng 17 chức năng để giao việc và theo dõi sprint theo mô hình fullstack.</p>
+                </header>
+
+                <section class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+                    <div class="glassmorphism rounded-xl p-5 border border-orange-500/30">
+                        <p class="text-xs uppercase tracking-wide text-orange-300 font-semibold">Quốc</p>
+                        <h3 class="text-lg font-semibold mt-1">Core + Cố vấn nghiệp vụ</h3>
+                        <ul class="list-disc list-inside text-sm text-slate-300 mt-3 space-y-1">
+                            <li>Chốt rule kế toán lõi và kiểm soát khóa sổ.</li>
+                            <li>Duyệt PR chức năng ảnh hưởng chốt kỳ.</li>
+                            <li>Sign-off trước go-live.</li>
+                        </ul>
+                    </div>
+                    <div class="glassmorphism rounded-xl p-5 border border-cyan-500/30">
+                        <p class="text-xs uppercase tracking-wide text-cyan-300 font-semibold">Thông</p>
+                        <h3 class="text-lg font-semibold mt-1">Fullstack lead nghiệp vụ</h3>
+                        <ul class="list-disc list-inside text-sm text-slate-300 mt-3 space-y-1">
+                            <li>API hạch toán chứng từ, công nợ, đối soát.</li>
+                            <li>Transaction, idempotency, unit test service.</li>
+                            <li>Sửa bug P1 liên quan sai định khoản.</li>
+                        </ul>
+                    </div>
+                    <div class="glassmorphism rounded-xl p-5 border border-emerald-500/30">
+                        <p class="text-xs uppercase tracking-wide text-emerald-300 font-semibold">Trạng</p>
+                        <h3 class="text-lg font-semibold mt-1">Fullstack lead màn hình</h3>
+                        <ul class="list-disc list-inside text-sm text-slate-300 mt-3 space-y-1">
+                            <li>Màn hình báo cáo, công nợ, hóa đơn, queue.</li>
+                            <li>Chuẩn hóa UX validation theo rule BE.</li>
+                            <li>E2E luồng từ chứng từ đến báo cáo.</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <section class="glassmorphism rounded-xl overflow-hidden mb-6">
+                    <div class="p-6 border-b border-slate-700">
+                        <h3 class="text-lg font-semibold">Ma trận owner theo 17 chức năng</h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-slate-800 text-slate-200">
+                                <tr>
+                                    <th class="text-left p-4 font-semibold min-w-[220px]">Chức năng</th>
+                                    <th class="text-left p-4 font-semibold min-w-[160px]">Owner chính (E2E)</th>
+                                    <th class="text-left p-4 font-semibold min-w-[140px]">Phối hợp</th>
+                                    <th class="text-left p-4 font-semibold min-w-[320px]">Ghi chú giao việc</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-700 text-slate-300">
+                                <tr><td class="p-4">3.1 Danh mục tài khoản</td><td class="p-4">Quốc</td><td class="p-4">Trạng</td><td class="p-4">Chốt rule tài khoản cha-con, khóa sửa tài khoản đã phát sinh.</td></tr>
+                                <tr><td class="p-4">3.2 Mở sổ/Khóa sổ</td><td class="p-4">Quốc</td><td class="p-4">Thông, Trạng</td><td class="p-4">Chốt lock/unlock, role, audit log.</td></tr>
+                                <tr><td class="p-4">3.3 Sổ nhật ký chung</td><td class="p-4">Trạng</td><td class="p-4">Thông</td><td class="p-4">Owner end-to-end BE+FE report, lọc/paging/export.</td></tr>
+                                <tr><td class="p-4">3.4 Sổ chi tiết tài khoản</td><td class="p-4">Trạng</td><td class="p-4">Thông</td><td class="p-4">Owner end-to-end BE+FE drill-down và công thức số dư.</td></tr>
+                                <tr><td class="p-4">3.5 Bảng cân đối kế toán</td><td class="p-4">Quốc</td><td class="p-4">Trạng</td><td class="p-4">Chốt mapping chỉ tiêu và cảnh báo lệch.</td></tr>
+                                <tr><td class="p-4">3.6 Kết chuyển cuối kỳ</td><td class="p-4">Quốc</td><td class="p-4">Thông</td><td class="p-4">Chốt 911, 421; chống chạy lặp.</td></tr>
+                                <tr><td class="p-4">3.7 Công nợ KH 131</td><td class="p-4">Thông</td><td class="p-4">Trạng</td><td class="p-4">API aging + màn hình tuổi nợ khách hàng.</td></tr>
+                                <tr><td class="p-4">3.8 Công nợ NCC 331</td><td class="p-4">Thông</td><td class="p-4">Trạng</td><td class="p-4">API aging + màn hình tuổi nợ NCC.</td></tr>
+                                <tr><td class="p-4">3.9 Đối soát</td><td class="p-4">Thông</td><td class="p-4">Trạng</td><td class="p-4">Rule đối soát + queue xử lý sai lệch.</td></tr>
+                                <tr><td class="p-4">3.10 Chứng từ thu</td><td class="p-4">Thông</td><td class="p-4">Trạng</td><td class="p-4">Owner end-to-end BE+FE cho post receipt và form phiếu thu.</td></tr>
+                                <tr><td class="p-4">3.11 Chứng từ chi</td><td class="p-4">Thông</td><td class="p-4">Trạng</td><td class="p-4">Owner end-to-end BE+FE cho post payment và form phiếu chi.</td></tr>
+                                <tr><td class="p-4">3.12 Chứng từ nhập</td><td class="p-4">Thông</td><td class="p-4">Trạng</td><td class="p-4">Đồng bộ tồn kho và VAT đầu vào.</td></tr>
+                                <tr><td class="p-4">3.13 Chứng từ xuất</td><td class="p-4">Thông</td><td class="p-4">Trạng</td><td class="p-4">2 cặp bút toán + chặn âm kho.</td></tr>
+                                <tr><td class="p-4">3.14 Hóa đơn mua vào</td><td class="p-4">Trạng</td><td class="p-4">Thông</td><td class="p-4">FE danh sách + BE link voucher.</td></tr>
+                                <tr><td class="p-4">3.15 Hóa đơn bán ra</td><td class="p-4">Trạng</td><td class="p-4">Thông</td><td class="p-4">FE danh sách + BE link voucher.</td></tr>
+                                <tr><td class="p-4">3.16 Chứng từ chưa hạch toán</td><td class="p-4">Trạng</td><td class="p-4">Thông</td><td class="p-4">Queue backlog, bắt buộc về 0 trước khóa sổ.</td></tr>
+                                <tr><td class="p-4">3.17 Cấu hình kỳ kế toán</td><td class="p-4">Quốc</td><td class="p-4">Trạng</td><td class="p-4">Chốt default lock day và phạm vi ảnh hưởng.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="glassmorphism rounded-xl overflow-hidden mb-6">
+                    <div class="p-6 border-b border-slate-700">
+                        <h3 class="text-lg font-semibold">Giao việc theo sprint</h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-slate-800 text-slate-200">
+                                <tr>
+                                    <th class="text-left p-4 font-semibold min-w-[110px]">Sprint</th>
+                                    <th class="text-left p-4 font-semibold min-w-[240px]">Quốc</th>
+                                    <th class="text-left p-4 font-semibold min-w-[260px]">Thông</th>
+                                    <th class="text-left p-4 font-semibold min-w-[260px]">Trạng</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-700 text-slate-300">
+                                <tr>
+                                    <td class="p-4">Sprint 1</td>
+                                    <td class="p-4">Chốt core 3.1, 3.2; review API.</td>
+                                    <td class="p-4">Owner end-to-end 3.10, 3.11; phối hợp 3.1, 3.2.</td>
+                                    <td class="p-4">Owner end-to-end 3.1, 3.2; phối hợp 3.10, 3.11.</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-4">Sprint 2</td>
+                                    <td class="p-4">Duyệt rule 3.12, 3.13.</td>
+                                    <td class="p-4">Owner end-to-end 3.12, 3.13; phối hợp 3.3.</td>
+                                    <td class="p-4">Owner end-to-end 3.3; phối hợp 3.12, 3.13.</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-4">Sprint 3</td>
+                                    <td class="p-4">Chốt mapping 3.5, review số liệu 3.4.</td>
+                                    <td class="p-4">Phối hợp owner 3.4, 3.5; hỗ trợ API 3.14, 3.15.</td>
+                                    <td class="p-4">Owner end-to-end 3.4, 3.5, 3.14, 3.15.</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-4">Sprint 4</td>
+                                    <td class="p-4">Chốt rule kỳ kế toán 3.17.</td>
+                                    <td class="p-4">Owner end-to-end 3.7, 3.8, 3.9.</td>
+                                    <td class="p-4">Owner end-to-end 3.16, 3.17; phối hợp 3.7, 3.8, 3.9.</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-4">Sprint 5</td>
+                                    <td class="p-4">Sign-off 3.6 và go-live checklist.</td>
+                                    <td class="p-4">Owner end-to-end 3.6 + hardening.</td>
+                                    <td class="p-4">Owner end-to-end FE đối soát 3.9 + UAT fixes, hỗ trợ BE khi quá tải.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="glassmorphism rounded-xl p-6">
+                    <h3 class="text-lg font-semibold mb-3">Nguyên tắc phối hợp</h3>
+                    <ul class="list-disc list-inside text-sm text-slate-300 space-y-2">
+                        <li>PR chức năng core chỉ merge khi Quốc duyệt.</li>
+                        <li>Thông và Trạng chốt API contract trước khi code FE.</li>
+                        <li>Daily 15 phút: done, plan, blocker cần quyết định.</li>
+                        <li>Đóng thay đổi nghiệp vụ trước cuối sprint 2 ngày để regression.</li>
+                    </ul>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script src="../app.js"></script>
+</body>
+</html>

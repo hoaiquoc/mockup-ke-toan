@@ -25,9 +25,37 @@
         { id: "DT002", name: "Công ty B", type: "supplier" },
         { id: "DT003", name: "Công ty C", type: "both" }
     ];
+    function createDefaultBranchAccountingConfig() {
+        return {
+            allowReceipts: true,
+            allowPayments: true,
+            allowInventory: true,
+            allowFixedAssets: true,
+            allowClosing: true,
+            allowLockPeriod: true,
+            defaultVatRate: 10,
+            notes: "Đã cấu hình mặc định cho chi nhánh"
+        };
+    }
+
+    function normalizeBranchAccountingConfig(config) {
+        const normalized = createDefaultBranchAccountingConfig();
+        if (!config || typeof config !== 'object') return normalized;
+        return {
+            allowReceipts: config.allowReceipts !== undefined ? Boolean(config.allowReceipts) : normalized.allowReceipts,
+            allowPayments: config.allowPayments !== undefined ? Boolean(config.allowPayments) : normalized.allowPayments,
+            allowInventory: config.allowInventory !== undefined ? Boolean(config.allowInventory) : normalized.allowInventory,
+            allowFixedAssets: config.allowFixedAssets !== undefined ? Boolean(config.allowFixedAssets) : normalized.allowFixedAssets,
+            allowClosing: config.allowClosing !== undefined ? Boolean(config.allowClosing) : normalized.allowClosing,
+            allowLockPeriod: config.allowLockPeriod !== undefined ? Boolean(config.allowLockPeriod) : normalized.allowLockPeriod,
+            defaultVatRate: Number.isFinite(Number(config.defaultVatRate)) ? Number(config.defaultVatRate) : normalized.defaultVatRate,
+            notes: typeof config.notes === 'string' ? config.notes : normalized.notes
+        };
+    }
+
     let branches = [
-        { id: "CN01", ten_chi_nhanh: "Chi nhánh Quận 1", dia_chi: "Quận 1, TP.HCM", che_do_hach_toan: "chung" },
-        { id: "CN02", ten_chi_nhanh: "Chi nhánh Quận 3", dia_chi: "Quận 3, TP.HCM", che_do_hach_toan: "doc_lap" }
+        { id: "CN01", ten_chi_nhanh: "Chi nhánh Quận 1", dia_chi: "Quận 1, TP.HCM", che_do_hach_toan: "chung", accountingConfig: createDefaultBranchAccountingConfig() },
+        { id: "CN02", ten_chi_nhanh: "Chi nhánh Quận 3", dia_chi: "Quận 3, TP.HCM", che_do_hach_toan: "doc_lap", accountingConfig: createDefaultBranchAccountingConfig() }
     ];
     let branchCounter = 3;
     let productStocksByBranch = {
@@ -102,6 +130,14 @@
     // Shape: { [branchId|'all']: { [YYYY-MM]: { isLocked: boolean, isClosed: boolean } } }
     let lockedPeriods = {};
 
+    // Lock-date config
+    // Shape: { [branchId|'all']: 'YYYY-MM-DD' | null }
+    let lockDateConfigs = { all: null };
+
+    // Monthly default lock day config
+    // Shape: { [branchId|'all']: { '1'..'12': number|null } }
+    let monthlyLockDayConfigs = { all: {} };
+
     // Dynamic closing rules
     let closingRules = [
         { id: "CR001", ten_quy_tac: "Kết chuyển Giá vốn", tai_khoan_nguon: "632", tai_khoan_dich: "911", loai_ket_chuyen: "chi_phi", branchId: null },
@@ -137,6 +173,8 @@
         accounts,
         openingBalances,
         lockedPeriods,
+        lockDateConfigs,
+        monthlyLockDayConfigs,
         closingRules,
         transactions,
         transactionIdCounter,
@@ -160,6 +198,8 @@
             accounts,
             openingBalances,
             lockedPeriods,
+            lockDateConfigs,
+            monthlyLockDayConfigs,
             closingRules,
             transactions,
             transactionIdCounter,
@@ -183,6 +223,8 @@
         accounts = state.accounts || JSON.parse(JSON.stringify(defaultAppState.accounts));
         openingBalances = state.openingBalances || {};
         lockedPeriods = state.lockedPeriods || {};
+        lockDateConfigs = state.lockDateConfigs || { all: null };
+        monthlyLockDayConfigs = state.monthlyLockDayConfigs || { all: {} };
         closingRules = state.closingRules || JSON.parse(JSON.stringify(defaultAppState.closingRules));
         transactions = state.transactions || JSON.parse(JSON.stringify(defaultAppState.transactions));
         transactionIdCounter = state.transactionIdCounter || defaultAppState.transactionIdCounter;
@@ -198,6 +240,11 @@
             branchCounter = defaultAppState.branchCounter;
         }
 
+        branches = branches.map(branch => ({
+            ...branch,
+            accountingConfig: normalizeBranchAccountingConfig(branch.accountingConfig)
+        }));
+
         if (lockedPeriods && typeof lockedPeriods === 'object' && !lockedPeriods.all) {
             const legacyKeys = Object.keys(lockedPeriods);
             const looksLegacy = legacyKeys.some(key => /^\d{4}-\d{2}$/.test(key));
@@ -209,6 +256,20 @@
         }
         if (!lockedPeriods || typeof lockedPeriods !== 'object') {
             lockedPeriods = { all: {} };
+        }
+
+        if (!lockDateConfigs || typeof lockDateConfigs !== 'object') {
+            lockDateConfigs = { all: null };
+        }
+        if (!Object.prototype.hasOwnProperty.call(lockDateConfigs, 'all')) {
+            lockDateConfigs.all = null;
+        }
+
+        if (!monthlyLockDayConfigs || typeof monthlyLockDayConfigs !== 'object') {
+            monthlyLockDayConfigs = { all: {} };
+        }
+        if (!Object.prototype.hasOwnProperty.call(monthlyLockDayConfigs, 'all') || typeof monthlyLockDayConfigs.all !== 'object') {
+            monthlyLockDayConfigs.all = {};
         }
 
         if (accounts && accounts.id_156) {
@@ -387,6 +448,271 @@
             isLocked: !!(globalData?.isLocked || branchData?.isLocked),
             isClosed: !!(globalData?.isClosed || branchData?.isClosed)
         };
+    }
+
+    function normalizeLockDateValue(value) {
+        if (!value || typeof value !== 'string') return null;
+        const trimmed = value.trim();
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return null;
+        const [year, month, day] = trimmed.split('-').map(Number);
+        const parsed = new Date(year, month - 1, day);
+        if (
+            Number.isNaN(parsed.getTime()) ||
+            parsed.getFullYear() !== year ||
+            parsed.getMonth() !== month - 1 ||
+            parsed.getDate() !== day
+        ) {
+            return null;
+        }
+        return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    }
+
+    function normalizeLockDayValue(value) {
+        if (value === null || value === undefined || value === '') return null;
+        const parsed = Number(value);
+        if (!Number.isInteger(parsed) || parsed < 1 || parsed > 31) return null;
+        return parsed;
+    }
+
+    function normalizeMonthlyLockDayMap(map) {
+        const normalized = {};
+        for (let month = 1; month <= 12; month++) {
+            const key = String(month);
+            normalized[key] = normalizeLockDayValue(map?.[key]);
+        }
+        return normalized;
+    }
+
+    function ensureMonthlyLockDayMap(scope) {
+        if (!monthlyLockDayConfigs || typeof monthlyLockDayConfigs !== 'object') {
+            monthlyLockDayConfigs = { all: {} };
+        }
+        if (!monthlyLockDayConfigs[scope] || typeof monthlyLockDayConfigs[scope] !== 'object') {
+            monthlyLockDayConfigs[scope] = {};
+        }
+        monthlyLockDayConfigs[scope] = normalizeMonthlyLockDayMap(monthlyLockDayConfigs[scope]);
+        return monthlyLockDayConfigs[scope];
+    }
+
+    function getLockDayByScope(scope, month) {
+        const monthKey = String(month);
+        const scopedMap = ensureMonthlyLockDayMap(scope || 'all');
+        return normalizeLockDayValue(scopedMap[monthKey]);
+    }
+
+    function getEffectiveMonthlyLockDay(branchId, month) {
+        const globalDay = getLockDayByScope('all', month);
+        if (!branchId || branchId === 'all') return globalDay;
+
+        const branchDay = getLockDayByScope(branchId, month);
+        return branchDay || globalDay;
+    }
+
+    function getMonthMaxDay(year, month) {
+        return new Date(year, month, 0).getDate();
+    }
+
+    function getSuggestedLockDateByMonthlyDefault(scope, year, month) {
+        const selectedYear = Number(year);
+        const selectedMonth = Number(month);
+        if (!Number.isInteger(selectedYear) || !Number.isInteger(selectedMonth) || selectedMonth < 1 || selectedMonth > 12) {
+            return null;
+        }
+        const defaultDay = getEffectiveMonthlyLockDay(scope, selectedMonth);
+        if (!defaultDay) return null;
+
+        const maxDay = getMonthMaxDay(selectedYear, selectedMonth);
+        const clampedDay = Math.min(defaultDay, maxDay);
+        return `${String(selectedYear).padStart(4, '0')}-${String(selectedMonth).padStart(2, '0')}-${String(clampedDay).padStart(2, '0')}`;
+    }
+
+    function getLockDateByScope(scope) {
+        const configScope = scope || 'all';
+        if (!lockDateConfigs || typeof lockDateConfigs !== 'object') {
+            lockDateConfigs = { all: null };
+        }
+        return normalizeLockDateValue(lockDateConfigs[configScope]);
+    }
+
+    function getEffectiveLockDate(branchId) {
+        const globalLockDate = getLockDateByScope('all');
+        if (!branchId || branchId === 'all') return globalLockDate;
+
+        const branchLockDate = getLockDateByScope(branchId);
+        if (!globalLockDate) return branchLockDate;
+        if (!branchLockDate) return globalLockDate;
+
+        return globalLockDate > branchLockDate ? globalLockDate : branchLockDate;
+    }
+
+    function isDateLockedByConfig(date, branchId) {
+        const normalizedDate = normalizeLockDateValue(date);
+        if (!normalizedDate) return false;
+        const effectiveLockDate = getEffectiveLockDate(branchId);
+        return !!effectiveLockDate && normalizedDate <= effectiveLockDate;
+    }
+
+    function renderLockDateConfig() {
+        const dateInput = document.getElementById('lock-config-date');
+        const statusEl = document.getElementById('lock-config-status');
+        if (!dateInput || !statusEl) return;
+
+        const scope = getSelectedBranchId('lock-period-branch-filter') || getDefaultBranchId();
+        const scopeLabel = scope === 'all' ? 'Toàn công ty' : getBranchLabelById(scope);
+        const selectedMonth = Number(document.getElementById('lock-month')?.value || (new Date().getMonth() + 1));
+        const selectedYear = Number(document.getElementById('lock-year')?.value || new Date().getFullYear());
+        const scopedLockDate = getLockDateByScope(scope);
+        const effectiveLockDate = getEffectiveLockDate(scope);
+        const scopedDefaultDay = getLockDayByScope(scope, selectedMonth);
+        const effectiveDefaultDay = getEffectiveMonthlyLockDay(scope, selectedMonth);
+        const suggestedDate = getSuggestedLockDateByMonthlyDefault(scope, selectedYear, selectedMonth);
+
+        dateInput.value = scopedLockDate || suggestedDate || '';
+
+        const scopedText = scopedLockDate
+            ? `Ngày khóa theo phạm vi ${scopeLabel}: ${scopedLockDate}`
+            : `Phạm vi ${scopeLabel} chưa có ngày khóa riêng.`;
+        const effectiveText = effectiveLockDate
+            ? `Ngày khóa đang áp dụng thực tế: ${effectiveLockDate}.`
+            : 'Hiện chưa áp dụng ngày khóa tự động.';
+        const defaultDayText = scopedDefaultDay
+            ? `Ngày khóa cố định hàng tháng của ${scopeLabel}: ${scopedDefaultDay}.`
+            : `${scopeLabel} chưa có ngày khóa cố định hàng tháng.`;
+        const effectiveDefaultText = effectiveDefaultDay
+            ? `Ngày cố định đang áp dụng cho tháng ${selectedMonth}: ngày ${effectiveDefaultDay}.`
+            : `Tháng ${selectedMonth} chưa có ngày cố định áp dụng.`;
+
+        statusEl.innerHTML = `${scopedText}<br>${effectiveText}<br>${defaultDayText}<br>${effectiveDefaultText}`;
+    }
+
+    function renderMonthlyLockDayConfig() {
+        const scope = getSelectedBranchId('lock-period-branch-filter') || getDefaultBranchId();
+        const scopedMap = ensureMonthlyLockDayMap(scope);
+        const input = document.getElementById('lock-default-day');
+        if (!input) return;
+
+        let fixedDay = normalizeLockDayValue(scopedMap['1']);
+        if (!fixedDay) {
+            for (let month = 1; month <= 12; month++) {
+                const monthDay = normalizeLockDayValue(scopedMap[String(month)]);
+                if (monthDay) {
+                    fixedDay = monthDay;
+                    break;
+                }
+            }
+        }
+        input.value = fixedDay ? String(fixedDay) : '';
+    }
+
+    function saveMonthlyLockDayConfig() {
+        const scope = getSelectedBranchId('lock-period-branch-filter') || getDefaultBranchId();
+        const scopedMap = ensureMonthlyLockDayMap(scope);
+
+        const input = document.getElementById('lock-default-day');
+        const fixedDay = normalizeLockDayValue(input?.value);
+        if (!fixedDay) {
+            alert('Vui lòng nhập ngày cố định hợp lệ (1-31).');
+            return;
+        }
+
+        for (let month = 1; month <= 12; month++) {
+            scopedMap[String(month)] = fixedDay;
+        }
+
+        monthlyLockDayConfigs[scope] = normalizeMonthlyLockDayMap(scopedMap);
+        renderMonthlyLockDayConfig();
+        renderLockDateConfig();
+        renderLockPeriodTable();
+        renderAll();
+
+        const scopeLabel = scope === 'all' ? 'Toàn công ty' : getBranchLabelById(scope);
+        alert(`Đã lưu ngày khóa sổ mặc định theo tháng cho ${scopeLabel}.`);
+    }
+
+    function clearMonthlyLockDayConfig() {
+        const scope = getSelectedBranchId('lock-period-branch-filter') || getDefaultBranchId();
+        monthlyLockDayConfigs[scope] = normalizeMonthlyLockDayMap({});
+
+        renderMonthlyLockDayConfig();
+        renderLockDateConfig();
+        renderLockPeriodTable();
+        renderAll();
+
+        const scopeLabel = scope === 'all' ? 'Toàn công ty' : getBranchLabelById(scope);
+        alert(`Đã xóa ngày khóa sổ mặc định theo tháng của ${scopeLabel}.`);
+    }
+
+    function applyMonthlyDefaultLockDate() {
+        const scope = getSelectedBranchId('lock-period-branch-filter') || getDefaultBranchId();
+        const month = Number(document.getElementById('lock-month')?.value || 0);
+        const year = Number(document.getElementById('lock-year')?.value || 0);
+        const suggestedDate = getSuggestedLockDateByMonthlyDefault(scope, year, month);
+
+        if (!suggestedDate) {
+            alert('Tháng đang chọn chưa có ngày khóa sổ mặc định. Vui lòng cấu hình trước.');
+            return;
+        }
+
+        const dateInput = document.getElementById('lock-config-date');
+        if (dateInput) dateInput.value = suggestedDate;
+        renderLockDateConfig();
+    }
+
+    function onLockPeriodSelectionChange() {
+        renderLockDateConfig();
+    }
+
+    function applyLockDateToTransactions(scope, lockDate) {
+        const normalizedLockDate = normalizeLockDateValue(lockDate);
+        if (!normalizedLockDate) return;
+
+        transactions.forEach(txn => {
+            const isMatchedScope = scope === 'all' || txn.branchId === scope;
+            if (!isMatchedScope) return;
+
+            const normalizedTxnDate = normalizeLockDateValue(txn.date);
+            if (normalizedTxnDate && normalizedTxnDate <= normalizedLockDate) {
+                txn.isLocked = true;
+            }
+        });
+    }
+
+    function saveLockDateConfig() {
+        const dateInput = document.getElementById('lock-config-date');
+        const selectedDate = normalizeLockDateValue(dateInput?.value || '');
+        if (!selectedDate) {
+            alert('Vui lòng chọn ngày khóa sổ hợp lệ.');
+            return;
+        }
+
+        const scope = getSelectedBranchId('lock-period-branch-filter') || getDefaultBranchId();
+        if (!lockDateConfigs || typeof lockDateConfigs !== 'object') {
+            lockDateConfigs = { all: null };
+        }
+        lockDateConfigs[scope] = selectedDate;
+
+        applyLockDateToTransactions(scope, selectedDate);
+        renderLockDateConfig();
+        renderLockPeriodTable();
+        renderAll();
+
+        const scopeLabel = scope === 'all' ? 'Toàn công ty' : getBranchLabelById(scope);
+        alert(`Đã lưu ngày khóa sổ ${scopeLabel}: ${selectedDate}`);
+    }
+
+    function clearLockDateConfig() {
+        const scope = getSelectedBranchId('lock-period-branch-filter') || getDefaultBranchId();
+        if (!lockDateConfigs || typeof lockDateConfigs !== 'object') {
+            lockDateConfigs = { all: null };
+        }
+        lockDateConfigs[scope] = null;
+
+        renderLockDateConfig();
+        renderLockPeriodTable();
+        renderAll();
+
+        const scopeLabel = scope === 'all' ? 'Toàn công ty' : getBranchLabelById(scope);
+        alert(`Đã xóa cấu hình ngày khóa sổ của ${scopeLabel}.`);
     }
 
     // Get display account - handles parent -> default child mapping
@@ -635,6 +961,97 @@
         ].forEach(selectId => populateBranchSelect(selectId, true));
     }
 
+    function getBranchAccountingConfig(branchId) {
+        const branch = getBranchById(branchId);
+        if (!branch) return createDefaultBranchAccountingConfig();
+        if (!branch.accountingConfig || typeof branch.accountingConfig !== 'object') {
+            branch.accountingConfig = createDefaultBranchAccountingConfig();
+        }
+        branch.accountingConfig = normalizeBranchAccountingConfig(branch.accountingConfig);
+        return branch.accountingConfig;
+    }
+
+    function populateBranchConfigSelect() {
+        const select = document.getElementById('branch-config-select');
+        if (!select) return;
+
+        const currentValue = select.value;
+        select.innerHTML = '';
+        branches.forEach(branch => {
+            const option = document.createElement('option');
+            option.value = branch.id;
+            option.textContent = `${branch.id} - ${branch.ten_chi_nhanh}`;
+            select.appendChild(option);
+        });
+
+        const fallbackValue = getDefaultBranchId();
+        select.value = currentValue && Array.from(select.options).some(option => option.value === currentValue)
+            ? currentValue
+            : fallbackValue;
+        renderBranchAccountingConfigForm();
+    }
+
+    function renderBranchAccountingConfigForm() {
+        const select = document.getElementById('branch-config-select');
+        const branchId = select?.value || getDefaultBranchId();
+        const config = getBranchAccountingConfig(branchId);
+
+        const fields = [
+            ['branch-config-receipt', config.allowReceipts],
+            ['branch-config-payment', config.allowPayments],
+            ['branch-config-inventory', config.allowInventory],
+            ['branch-config-fixed-assets', config.allowFixedAssets],
+            ['branch-config-closing', config.allowClosing],
+            ['branch-config-lock-period', config.allowLockPeriod]
+        ];
+
+        fields.forEach(([fieldId, checked]) => {
+            const input = document.getElementById(fieldId);
+            if (input) input.checked = Boolean(checked);
+        });
+
+        const vatInput = document.getElementById('branch-config-vat-rate');
+        if (vatInput) vatInput.value = config.defaultVatRate ?? 10;
+
+        const notesInput = document.getElementById('branch-config-notes');
+        if (notesInput) notesInput.value = config.notes || '';
+    }
+
+    function saveBranchAccountingConfig(event) {
+        event.preventDefault();
+
+        const select = document.getElementById('branch-config-select');
+        const branchId = select?.value || getDefaultBranchId();
+        const branch = getBranchById(branchId);
+        if (!branch) return;
+
+        const config = getBranchAccountingConfig(branchId);
+        config.allowReceipts = document.getElementById('branch-config-receipt')?.checked || false;
+        config.allowPayments = document.getElementById('branch-config-payment')?.checked || false;
+        config.allowInventory = document.getElementById('branch-config-inventory')?.checked || false;
+        config.allowFixedAssets = document.getElementById('branch-config-fixed-assets')?.checked || false;
+        config.allowClosing = document.getElementById('branch-config-closing')?.checked || false;
+        config.allowLockPeriod = document.getElementById('branch-config-lock-period')?.checked || false;
+        config.defaultVatRate = Number(document.getElementById('branch-config-vat-rate')?.value || 10);
+        config.notes = document.getElementById('branch-config-notes')?.value?.trim() || '';
+
+        branch.accountingConfig = config;
+        renderBranches();
+        saveState();
+        alert(`Đã cập nhật cấu hình nghiệp vụ kế toán cho ${getBranchLabelById(branchId)}.`);
+    }
+
+    function getBranchAccountingSummary(branch) {
+        const config = getBranchAccountingConfig(branch.id);
+        const badges = [];
+        if (config.allowReceipts || config.allowPayments) badges.push('<span class="rounded-full bg-emerald-900/40 px-2.5 py-1 text-[11px] font-semibold text-emerald-300">Thu/Chi</span>');
+        if (config.allowInventory) badges.push('<span class="rounded-full bg-blue-900/40 px-2.5 py-1 text-[11px] font-semibold text-blue-300">Kho</span>');
+        if (config.allowFixedAssets) badges.push('<span class="rounded-full bg-amber-900/40 px-2.5 py-1 text-[11px] font-semibold text-amber-300">TSCĐ</span>');
+        if (config.allowClosing) badges.push('<span class="rounded-full bg-cyan-900/40 px-2.5 py-1 text-[11px] font-semibold text-cyan-300">Kết chuyển</span>');
+        if (config.allowLockPeriod) badges.push('<span class="rounded-full bg-pink-900/40 px-2.5 py-1 text-[11px] font-semibold text-pink-300">Khóa sổ</span>');
+        return badges.join('');
+    }
+
     function renderBranches() {
         const tbody = document.getElementById('branches-table');
         if (!tbody) return;
@@ -650,6 +1067,9 @@
                         <span class="px-3 py-1 rounded-full text-xs font-semibold ${branch.che_do_hach_toan === 'doc_lap' ? 'bg-pink-900/40 text-pink-300' : 'bg-slate-700 text-slate-200'}">
                             ${branch.che_do_hach_toan === 'doc_lap' ? 'Độc lập' : 'Chung'}
                         </span>
+                    </td>
+                    <td class="p-4">
+                        <div class="flex flex-wrap gap-2">${getBranchAccountingSummary(branch)}</div>
                     </td>
                 </tr>
             `);
@@ -681,7 +1101,8 @@
             id: `CN${String(branchCounter++).padStart(2, '0')}`,
             ten_chi_nhanh,
             dia_chi,
-            che_do_hach_toan
+            che_do_hach_toan,
+            accountingConfig: createDefaultBranchAccountingConfig()
         });
 
         const newBranchId = branches[branches.length - 1].id;
@@ -695,6 +1116,7 @@
         document.getElementById('form-add-branch')?.reset();
         renderBranches();
         populateBranchSelects();
+        populateBranchConfigSelect();
         saveState();
         alert('Đã thêm chi nhánh mới!');
     }
@@ -1764,13 +2186,14 @@
     function addTransaction(date, type, ref, desc, debitAccountId, creditAccountId, amount, branchId = getDefaultBranchId(), meta = null) {
         const periodKey = getPeriodKeyFromDate(date);
         const effectiveLock = getEffectiveLockedPeriodData(branchId, periodKey);
+        const isDateLocked = isDateLockedByConfig(date, branchId);
         const txn = {
             id: `txn_${transactionIdCounter++}`,
             date, type, ref, desc,
             debitAccountId, creditAccountId,
             amount,
             branchId,
-            isLocked: !!effectiveLock.isLocked
+            isLocked: !!(effectiveLock.isLocked || isDateLocked)
         };
         if (meta && typeof meta === 'object') {
             Object.assign(txn, meta);
@@ -4093,7 +4516,12 @@
         'closing-config': 'closing-config.html',
         'opening-balance': 'opening-balance.html',
         'lock-period': 'lock-period.html',
-        'balance': 'balance.html'
+        'balance': 'balance.html',
+        'implementation-plan': 'implementation-plan.html',
+        'pm-report': 'pm-report.html',
+        'dev-ba-spec': 'dev-ba-spec.html',
+        'team-allocation': 'team-allocation.html',
+        'function-business-docs': 'function-business-docs.html'
     };
     const businessDocs = {
         'dashboard': {
@@ -4293,6 +4721,14 @@
                 { heading: 'Cách hiểu cực đơn giản', items: ['Vế trái là tài sản: tiền, hàng, phải thu, tài sản cố định...', 'Vế phải là nguồn hình thành: nợ phải trả và vốn chủ sở hữu.'] },
                 { heading: 'Vì sao phải luôn cân', items: ['Tài sản không tự nhiên xuất hiện. Nếu có thêm tài sản thì phải do chủ bỏ vốn vào, đi vay, bán hàng tạo ra quyền đòi tiền, hoặc chuyển đổi từ tài sản khác.', 'Vì vậy tổng tài sản luôn phải bằng tổng nguồn hình thành tài sản.'] },
                 { heading: 'Liên hệ với định khoản', items: ['Mỗi bút toán đúng sẽ luôn làm hệ thống vẫn cân sau giao dịch.', 'Nếu bảng cân đối lệch, thường là dấu hiệu định khoản sai, thiếu một vế, hoặc nhập sai số dư đầu kỳ.'] }
+            ]
+        },
+        'implementation-plan': {
+            title: 'Kế hoạch triển khai tính năng kế toán',
+            overview: 'Trang này tổng hợp các đầu việc chi tiết để triển khai đầy đủ các nhóm tính năng kế toán từ danh mục tài khoản đến chốt kỳ.',
+            sections: [
+                { heading: 'Phạm vi', items: ['Bao gồm danh mục tài khoản, chứng từ thu/chi/nhập/xuất, công nợ, hóa đơn, đối soát, kết chuyển và khóa sổ.', 'Mỗi đầu việc cần có tiêu chí nghiệm thu rõ ràng và test nghiệp vụ trước khi go-live.'] },
+                { heading: 'Cách dùng', items: ['Theo dõi trạng thái theo từng module trên trang kế hoạch.', 'Ưu tiên triển khai theo thứ tự: nền tảng dữ liệu -> nghiệp vụ chứng từ -> báo cáo/chốt kỳ -> kiểm soát.'] }
             ]
         }
     };
@@ -4619,6 +5055,36 @@
                     </svg>
                     <span>Bảng Cân Đối</span>
                 </button>
+                <button onclick="showModule('implementation-plan')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-implementation-plan">
+                    <svg class="w-5 h-5 text-lime-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-7 7l2 2 4-4"/>
+                    </svg>
+                    <span>Kế hoạch triển khai</span>
+                </button>
+                <button onclick="showModule('pm-report')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-pm-report">
+                    <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-6m3 6V7m3 10v-4m3 8H6a2 2 0 01-2-2V5a2 2 0 012-2h9.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <span>Báo cáo PM</span>
+                </button>
+                <button onclick="showModule('dev-ba-spec')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-dev-ba-spec">
+                    <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span>BA cho Dev</span>
+                </button>
+                <button onclick="showModule('team-allocation')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-team-allocation">
+                    <svg class="w-5 h-5 text-orange-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5V4H2v16h5m10 0v-3a3 3 0 00-3-3H10a3 3 0 00-3 3v3m10 0H7m8-12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    <span>Phân công nhân sự</span>
+                </button>
+                <button onclick="showModule('function-business-docs')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-function-business-docs">
+                    <svg class="w-5 h-5 text-violet-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z"/>
+                    </svg>
+                    <span>Nghiệp vụ 17 chức năng</span>
+                </button>
             </nav>
         `;
     }
@@ -4708,7 +5174,7 @@
         ensureFilterRow('module-balance', 'balance-branch-filter', 'Phạm vi cân đối', 'renderBalanceSheet()');
         ensureFilterRow('module-closing', 'closing-branch-filter', 'Phạm vi kết chuyển', '');
         ensureFilterRow('module-closing-config', 'closing-config-branch-filter', 'Phạm vi cấu hình kết chuyển', 'renderClosingRules()');
-        ensureFilterRow('module-lock-period', 'lock-period-branch-filter', 'Phạm vi khóa sổ', 'renderLockPeriodTable()');
+        ensureFilterRow('module-lock-period', 'lock-period-branch-filter', 'Phạm vi khóa sổ', 'renderLockPeriodTable(); renderMonthlyLockDayConfig(); renderLockDateConfig()');
     }
 
     function showModule(moduleName) {
@@ -4733,6 +5199,8 @@
         if (moduleName === 'lock-period') {
             populateBranchSelects();
             renderLockPeriodTable();
+            renderMonthlyLockDayConfig();
+            renderLockDateConfig();
         }
         if (moduleName === 'closing-config') {
             populateBranchSelects();
@@ -4797,6 +5265,7 @@
             renderFixedAssets();
         }
         if (moduleName === 'branches') {
+            populateBranchConfigSelect();
             renderBranches();
         }
     }
@@ -4824,6 +5293,7 @@
         renderClosingRules();
         renderLedger();
         renderBranches();
+        populateBranchConfigSelect();
         saveState();
     }
 
@@ -4861,6 +5331,9 @@
             e.preventDefault();
             addBranch();
         });
+
+        document.getElementById('form-branch-accounting-config')?.addEventListener('submit', saveBranchAccountingConfig);
+        document.getElementById('branch-config-select')?.addEventListener('change', renderBranchAccountingConfigForm);
 
         document.getElementById('form-receive')?.addEventListener('submit', saveReceiveVoucher);
         document.getElementById('form-pay')?.addEventListener('submit', savePayVoucher);
