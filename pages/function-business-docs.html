@@ -24,6 +24,46 @@
                     <p class="text-slate-400 mt-2">Click vào từng chức năng để mở popup nghiệp vụ chi tiết: mục tiêu, luồng xử lý theo bước, định khoản mẫu, rule kiểm soát, nhánh lỗi và tiêu chí nghiệm thu.</p>
                 </header>
 
+                <section class="glassmorphism rounded-xl p-6 mb-6 border border-violet-500/20">
+                    <h3 class="text-lg font-semibold text-violet-300 mb-3">Gợi ý mapping nhanh để chạy ổn định và dễ refactor</h3>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 text-sm text-slate-300">
+                        <div class="rounded-lg border border-slate-700 bg-slate-800/60 p-4">
+                            <p class="font-semibold text-cyan-300 mb-2">Kiến trúc mapping nên dùng</p>
+                            <ul class="list-disc list-inside space-y-1">
+                                <li>Lưu giao dịch bằng <span class="font-mono">account_id</span> trong journal lines.</li>
+                                <li>Tạo lớp dictionary map <span class="font-mono">account_id -> { code, name, type, status }</span>.</li>
+                                <li>Mọi báo cáo chỉ aggregate theo <span class="font-mono">account_id</span>, hiển thị code/name ở lớp view.</li>
+                                <li>Cho phép đổi code/name mà không phá dữ liệu lịch sử.</li>
+                            </ul>
+                        </div>
+                        <div class="rounded-lg border border-slate-700 bg-slate-800/60 p-4">
+                            <p class="font-semibold text-emerald-300 mb-2">Contract ổn định cho API</p>
+                            <ul class="list-disc list-inside space-y-1">
+                                <li>Response trả cả <span class="font-mono">accountId</span> và object <span class="font-mono">accountView</span>.</li>
+                                <li><span class="font-mono">accountView</span> gồm code, name, type để FE không phải join thêm.</li>
+                                <li>Thêm <span class="font-mono">scope=branch|all</span> cho mọi API report.</li>
+                                <li>Scope all phải tổng hợp theo <span class="font-mono">account_id</span> rồi mới render theo code.</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="mt-4 rounded-lg border border-slate-700 bg-slate-900 p-4">
+                        <p class="text-xs uppercase tracking-wide text-amber-300 font-semibold mb-2">Checklist triển khai nhanh</p>
+                        <ol class="list-decimal list-inside text-sm text-slate-300 space-y-1">
+                            <li>Tạo cache dictionary account theo version hoặc updatedAt.</li>
+                            <li>Read-through cache: miss thì query DB và cập nhật cache.</li>
+                            <li>Đặt cờ cảnh báo khi journal chứa account_id không còn active.</li>
+                            <li>Viết 1 adapter duy nhất map dữ liệu report -> view model.</li>
+                            <li>Test refactor: đổi code tài khoản, kiểm tra số liệu lịch sử không đổi.</li>
+                        </ol>
+                    </div>
+
+                    <div class="mt-4 rounded-lg border border-slate-700 bg-slate-900 p-4">
+                        <p class="text-xs uppercase tracking-wide text-cyan-300 font-semibold mb-2">Mẫu code C# theo từng chức năng</p>
+                        <p class="text-sm text-slate-300">Code đã được chuyển vào popup của từng chức năng. Bấm vào từng card chức năng bên dưới để xem snippet tương ứng (đặc biệt các mục 3.10, 3.11, 3.12, 3.13 và 3.16).</p>
+                        <p class="text-xs text-slate-500 mt-2">Gợi ý triển khai production: tách posting rule theo cấu hình (voucherType + businessAction), tránh hard-code lâu dài.</p>
+                    </div>
+                </section>
+
                 <section class="glassmorphism rounded-xl p-6">
                     <div class="flex flex-wrap items-center gap-3 mb-4">
                         <input id="fn-search" type="text" placeholder="Tìm chức năng..." class="w-full max-w-md bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-violet-500">
@@ -51,9 +91,9 @@
     <script src="../app.js"></script>
     <script>
         const functionDocs = [
-            { code: '3.1', name: 'Danh mục tài khoản kế toán', goal: 'Quản lý cây tài khoản chuẩn, không sai mã, không phá dữ liệu lịch sử.', flow: ['Tạo tài khoản cha/con theo hệ thống chuẩn.', 'Khóa sửa mã tài khoản đã phát sinh bút toán.', 'Cho phép ngưng dùng nhưng không xóa cứng tài khoản đã dùng.'], posting: 'Không phát sinh định khoản trực tiếp.', rules: ['Không trùng mã tài khoản.', 'Tài khoản cha không post trực tiếp.', 'Lưu lịch sử thay đổi quan trọng.'], accept: ['Tạo/sửa hợp lệ.', 'Chặn trùng mã.', 'Chặn đổi mã tài khoản đã phát sinh.'] },
+            { code: '3.1', name: 'Danh mục tài khoản kế toán', goal: 'Quản lý cây tài khoản chuẩn, không sai mã, không phá dữ liệu lịch sử và hỗ trợ xem số liệu theo chi nhánh hoặc toàn công ty.', flow: ['Tạo tài khoản cha/con theo hệ thống chuẩn.', 'Khóa sửa mã tài khoản đã phát sinh bút toán.', 'Cho phép ngưng dùng nhưng không xóa cứng tài khoản đã dùng.', 'Khi xem toàn công ty: cộng số liệu tất cả chi nhánh theo account_id trên chứng từ, sau đó map sang account code để hiển thị và drill-down về từng chi nhánh.'], posting: 'Không phát sinh định khoản trực tiếp.', rules: ['Không trùng mã tài khoản.', 'Tài khoản cha không post trực tiếp.', 'Lưu lịch sử thay đổi quan trọng.', 'Báo cáo phải có scope: branch hoặc all.', 'Sổ nhật ký lưu account_id, không lưu account code trực tiếp.', 'Scope all phải tổng hợp đa chi nhánh theo account_id rồi map sang account code.', 'Báo cáo hợp nhất quản trị cần loại trừ giao dịch nội bộ 136/336 để tránh đếm đôi.'], accept: ['Tạo/sửa hợp lệ.', 'Chặn trùng mã.', 'Chặn đổi mã tài khoản đã phát sinh.', 'Xem scope all ra số tổng đúng, hiển thị đúng account code và mở drill-down theo chi nhánh được.'] },
             { code: '3.2', name: 'Mở sổ và khóa sổ', goal: 'Bảo vệ dữ liệu kỳ đã chốt, đảm bảo số liệu không bị sửa trái phép.', flow: ['Thiết lập ngày khóa mặc định theo tháng.', 'Khóa kỳ theo chi nhánh hoặc toàn công ty.', 'Mở khóa bắt buộc lý do và phân quyền kế toán trưởng.'], posting: 'Không phát sinh định khoản trực tiếp.', rules: ['Kỳ khóa chặn create/update/delete chứng từ.', 'Unlock bắt buộc reason + audit log.', 'Không khóa nếu backlog chưa hạch toán > 0.'], accept: ['Khóa kỳ thành công.', 'API chứng từ trả ACC_PERIOD_LOCKED khi kỳ khóa.', 'Mở khóa có log người thao tác.'] },
-            { code: '3.3', name: 'Sổ nhật ký chung', goal: 'Tra cứu toàn bộ bút toán theo thời gian và theo bộ lọc nghiệp vụ.', flow: ['Nhận dữ liệu từ journal entries và journal lines.', 'Lọc theo ngày, tài khoản, loại chứng từ, chi nhánh.', 'Cho export phục vụ đối chiếu và kiểm toán.'], posting: 'Không phát sinh định khoản mới.', rules: ['Sắp xếp posting date tăng dần.', 'Số liệu export phải khớp màn hình.', 'Có phân trang để xử lý dữ liệu lớn.'], accept: ['Lọc đúng.', 'Export đúng.', 'Hiệu năng ổn với dữ liệu tháng lớn.'] },
+            { code: '3.3', name: 'Sổ nhật ký chung', goal: 'Tra cứu toàn bộ bút toán theo thời gian và theo bộ lọc nghiệp vụ.', flow: ['Nhận dữ liệu từ journal entries và journal lines.', 'Lọc theo ngày, tài khoản, loại chứng từ, chi nhánh.', 'Hỗ trợ scope all để xem toàn công ty và cho phép mở chi tiết từng chi nhánh.', 'Khi render danh sách: join account_id với bảng accounts để hiển thị account code.', 'Cho export phục vụ đối chiếu và kiểm toán.'], posting: 'Không phát sinh định khoản mới.', rules: ['Sắp xếp posting date tăng dần.', 'Số liệu export phải khớp màn hình.', 'Có phân trang để xử lý dữ liệu lớn.', 'Scope all phải tổng hợp dữ liệu từ tất cả branchId theo account_id.', 'Hiển thị account code bằng cách map account_id -> accounts.code.'], accept: ['Lọc đúng.', 'Export đúng.', 'Hiệu năng ổn với dữ liệu tháng lớn.', 'Xem toàn công ty và drill-down chi nhánh đúng.', 'Không sai lệch khi account code đổi tên nhưng account_id không đổi.'] },
             { code: '3.4', name: 'Sổ chi tiết tài khoản', goal: 'Theo dõi biến động từng tài khoản và số dư chạy.', flow: ['Chọn tài khoản + kỳ + chi nhánh.', 'Tính opening/debit/credit/ending.', 'Drill-down về chứng từ gốc.'], posting: 'Không phát sinh định khoản mới.', rules: ['Ending = Opening + Debit - Credit.', 'Mỗi dòng phải truy vết về voucher.', 'Khớp với số dư tổng hợp cùng kỳ.'], accept: ['Công thức đúng.', 'Drill-down đúng chứng từ.', 'Khớp số với báo cáo tổng.'] },
             { code: '3.5', name: 'Bảng cân đối kế toán', goal: 'Tổng hợp tài sản, nợ phải trả, vốn chủ sở hữu đúng bản chất.', flow: ['Map tài khoản vào chỉ tiêu báo cáo.', 'Tính tổng tài sản và tổng nguồn vốn.', 'Cảnh báo sai lệch khi mất cân.'], posting: 'Không phát sinh định khoản mới.', rules: ['Phải có mapping cho tài khoản phát sinh.', 'Cảnh báo khi totalAssets != totalLiabilitiesAndEquity.', 'Cho xem theo chi nhánh hoặc hợp nhất.'], accept: ['Map đúng chỉ tiêu.', 'Có cảnh báo lệch.', 'Khớp số với ledger/journal.'] },
             { code: '3.6', name: 'Kết chuyển cuối kỳ', goal: 'Xác định kết quả kinh doanh cuối kỳ chính xác và có thể kiểm soát.', flow: ['Kiểm tra điều kiện chạy (backlog = 0).', 'Sinh bút toán kết chuyển doanh thu/chi phí về 911.', 'Kết chuyển lãi/lỗ sang 421.'], posting: 'Ví dụ: Nợ 511/Có 911; Nợ 911/Có 632; Nợ 911/Có 421 (trường hợp lãi).', rules: ['Chống chạy lặp theo kỳ.', 'Reverse có phân quyền.', 'Lưu lịch sử run và người thực hiện.'], accept: ['Run lần đầu thành công.', 'Run lần hai không sinh trùng.', 'Reverse có log đầy đủ.'] },
@@ -70,8 +110,1048 @@
             { code: '3.17', name: 'Cấu hình kỳ kế toán', goal: 'Dùng một nguồn cấu hình thống nhất cho lock, closing và báo cáo.', flow: ['Thiết lập năm tài chính và chu kỳ.', 'Cấu hình ngày khóa mặc định (default lock day).', 'Áp dụng đồng bộ cho toàn module.'], posting: 'Không phát sinh định khoản trực tiếp.', rules: ['Một nguồn config duy nhất.', 'Mọi thay đổi phải ghi audit.', 'Thay đổi config phải có cảnh báo ảnh hưởng.'], accept: ['Config lưu thành công.', 'Module lock/closing/report đọc đúng config.', 'Có log thay đổi.'] }
         ];
 
+        const functionCodeSamples = {
+            '3.1': {
+                title: 'C# function - Danh mục tài khoản',
+                snippet: `public async Task<AccountViewDto> CreateChildAccountAsync(CreateChildAccountDto dto, CancellationToken ct)
+{
+    var parent = await _db.Accounts.FirstOrDefaultAsync(x => x.Id == dto.ParentId, ct)
+        ?? throw new KeyNotFoundException("ACC_PARENT_NOT_FOUND");
+
+    if (parent.IsPosting)
+        throw new InvalidOperationException("ACC_PARENT_MUST_BE_HEADER");
+
+    var childCode = await GenerateNextChildCodeAsync(parent.Code, ct);
+    await ValidateAccountCodeAsync(childCode, null, ct);
+
+    var child = new Account
+    {
+        Id = Guid.NewGuid(),
+        Code = childCode,
+        Name = dto.Name,
+        ParentId = parent.Id,
+        Type = parent.Type,
+        IsPosting = dto.IsPosting,
+        IsActive = true
+    };
+
+    _db.Accounts.Add(child);
+    await _db.SaveChangesAsync(ct);
+
+    return new AccountViewDto(child.Id, child.Code, child.Name, child.Type, child.IsPosting, child.IsActive);
+}
+
+public async Task UpsertAccountAsync(AccountUpsertDto dto, CancellationToken ct)
+{
+    var existsPosted = await _db.JournalLines.AnyAsync(x => x.AccountId == dto.Id, ct);
+    if (existsPosted && dto.CodeChanged)
+        throw new InvalidOperationException("ACC_CODE_LOCKED_AFTER_POSTING");
+
+    await _accountRepo.UpsertAsync(dto, ct);
+    await _cache.RemoveAsync("account-dict-v1", ct);
+}`,
+                notes: ['Không đổi mã khi đã phát sinh bút toán.', 'Phát sinh tài khoản con theo mã cha + sequence tăng dần.', 'Tài khoản cha để phát sinh con phải là header (không hạch toán trực tiếp).', 'Luôn invalidate cache dictionary sau khi cập nhật danh mục.']
+            },
+            '3.2': {
+                title: 'C# function - Mở sổ và khóa sổ',
+                snippet: `public async Task LockPeriodAsync(DateTime fromDate, DateTime toDate, string branchId, string userId, CancellationToken ct)
+{
+    await using var tx = await _db.Database.BeginTransactionAsync(ct);
+    try
+    {
+        var unposted = await _db.Vouchers.CountAsync(x => x.BranchId == branchId && !x.IsPosted && x.PostingDate >= fromDate && x.PostingDate <= toDate, ct);
+        if (unposted > 0)
+            throw new InvalidOperationException("ACC_BACKLOG_NOT_EMPTY");
+
+        await _periodRepo.LockAsync(fromDate, toDate, branchId, userId, ct);
+        await _auditRepo.WriteAsync("ACC_PERIOD_LOCKED", userId, $"{branchId}:{fromDate:yyyy-MM-dd}-{toDate:yyyy-MM-dd}", ct);
+
+        await tx.CommitAsync(ct);
+    }
+    catch
+    {
+        await tx.RollbackAsync(ct);
+        throw;
+    }
+}`,
+                notes: ['Chặn khóa kỳ nếu backlog chưa hạch toán > 0.', 'Bắt buộc audit user và thời điểm thao tác.']
+            },
+            '3.3': {
+                title: 'C# function - Sổ nhật ký chung',
+                snippet: `public async Task<IReadOnlyList<JournalRowVm>> GetJournalAsync(DateTime from, DateTime to, string scope, string? branchId, CancellationToken ct)
+{
+    var dict = await _accountDictionaryProvider.GetAsync(ct);
+    var query = _db.JournalLines.Where(x => x.PostingDate >= from && x.PostingDate <= to);
+    if (scope == "branch" && !string.IsNullOrWhiteSpace(branchId))
+        query = query.Where(x => x.BranchId == branchId);
+
+    return await query.OrderBy(x => x.PostingDate).Select(x => new JournalRowVm(x, dict[x.AccountId])).ToListAsync(ct);
+}`,
+                notes: ['Aggregate/filter theo AccountId, không theo account code.', 'Render code/name ở lớp view model.']
+            },
+            '3.4': {
+                title: 'C# function - Sổ chi tiết tài khoản',
+                snippet: `public async Task<AccountLedgerVm> GetAccountLedgerAsync(Guid accountId, DateTime from, DateTime to, string branchId, CancellationToken ct)
+{
+    var opening = await _ledgerRepo.GetOpeningAsync(accountId, from, branchId, ct);
+    var lines = await _ledgerRepo.GetLinesAsync(accountId, from, to, branchId, ct);
+    var debit = lines.Sum(x => x.Debit);
+    var credit = lines.Sum(x => x.Credit);
+    return new AccountLedgerVm(opening, debit, credit, opening + debit - credit, lines);
+}`,
+                notes: ['Công thức ending phải nhất quán: opening + debit - credit.', 'Mỗi dòng cần giữ voucherId để drill-down.']
+            },
+            '3.5': {
+                title: 'C# function - Bảng cân đối kế toán',
+                snippet: `public async Task<BalanceSheetVm> BuildBalanceSheetAsync(DateTime asOfDate, string scope, string? branchId, CancellationToken ct)
+{
+    var balances = await _balanceRepo.GetBalancesAsync(asOfDate, scope, branchId, ct);
+    var vm = _balanceSheetMapper.Map(balances);
+    if (vm.TotalAssets != vm.TotalLiabilitiesAndEquity)
+        vm.Warnings.Add("BALANCE_SHEET_NOT_BALANCED");
+    return vm;
+}`,
+                notes: ['Phải có mapping account -> chỉ tiêu báo cáo.', 'Cảnh báo mất cân không được im lặng bỏ qua.']
+            },
+            '3.6': {
+                title: 'C# function - Kết chuyển cuối kỳ',
+                snippet: `public async Task RunClosingAsync(int year, int month, string branchId, string userId, CancellationToken ct)
+{
+    await using var tx = await _db.Database.BeginTransactionAsync(ct);
+    try
+    {
+        if (await _closingRepo.ExistsAsync(year, month, branchId, ct))
+            throw new InvalidOperationException("ACC_CLOSING_ALREADY_RUN");
+
+        var lines = await _closingEngine.BuildClosingLinesAsync(year, month, branchId, ct);
+        await _journalWriter.WriteSystemEntryAsync("CLOSING", year, month, branchId, lines, userId, ct);
+
+        await tx.CommitAsync(ct);
+    }
+    catch
+    {
+        await tx.RollbackAsync(ct);
+        throw;
+    }
+}`,
+                notes: ['Chống chạy lặp theo kỳ bằng unique key.', 'Cho phép reverse nhưng phải phân quyền.']
+            },
+            '3.7': {
+                title: 'C# function - Công nợ khách hàng 131',
+                snippet: `public async Task<IReadOnlyList<ArAgingRowVm>> GetArAgingAsync(DateTime asOfDate, string scope, string? branchId, CancellationToken ct)
+{
+    var rows = await _arRepo.GetOpenItemsAsync(asOfDate, scope, branchId, ct);
+    return rows.Select(x => new ArAgingRowVm(x.CustomerId, x.Balance, BucketByDays((asOfDate - x.DueDate).Days))).ToList();
+}
+
+private static string BucketByDays(int overdueDays) => overdueDays switch { <= 30 => "0-30", <= 60 => "31-60", <= 90 => "61-90", _ => ">90" };`,
+                notes: ['Age bucket tính theo DueDate, không theo PostingDate.', 'Đối chiếu cuối cùng phải khớp số dư 131.']
+            },
+            '3.8': {
+                title: 'C# function - Công nợ nhà cung cấp 331',
+                snippet: `public async Task<IReadOnlyList<ApAgingRowVm>> GetApAgingAsync(DateTime asOfDate, string scope, string? branchId, CancellationToken ct)
+{
+    var rows = await _apRepo.GetOpenItemsAsync(asOfDate, scope, branchId, ct);
+    return rows.Select(x => new ApAgingRowVm(x.VendorId, x.Balance, BucketByDays((asOfDate - x.DueDate).Days))).ToList();
+}`,
+                notes: ['Theo dõi công nợ đến hạn và quá hạn theo vendor.', 'Khớp tổng hợp với số dư tài khoản 331.']
+            },
+            '3.9': {
+                title: 'C# function - Đối soát',
+                snippet: `public async Task<IReadOnlyList<ReconIssue>> RunReconcileAsync(DateTime fromDate, DateTime toDate, string branchId, CancellationToken ct)
+{
+    var issues = new List<ReconIssue>();
+    issues.AddRange(await _reconcileService.CheckInventoryAsync(fromDate, toDate, branchId, ct));
+    issues.AddRange(await _reconcileService.CheckArApAsync(fromDate, toDate, branchId, ct));
+    issues.AddRange(await _reconcileService.CheckVatAsync(fromDate, toDate, branchId, ct));
+    return issues;
+}`,
+                notes: ['Issue P1 open phải chặn khóa kỳ.', 'Mỗi issue cần owner, deadline, trạng thái xử lý.']
+            },
+            '3.10': {
+                title: 'C# function - Ghi sổ chứng từ thu',
+                snippet: `public async Task PostReceiptAsync(VoucherPostingRequest req, CancellationToken ct)
+{
+    await using var tx = await _db.Database.BeginTransactionAsync(ct);
+    try
+    {
+        await EnsurePeriodOpenAsync(req.PostingDate, req.BranchId, ct);
+        await EnsureNotPostedAsync(req.VoucherId, ct);
+
+        var lines = req.Details.SelectMany(d => new[]
+        {
+            new JournalLineCreateDto(d.DebitAccountId, d.Amount, 0m, d.Description),
+            new JournalLineCreateDto(d.CreditAccountId, 0m, d.Amount, d.Description)
+        }).ToList();
+
+        ValidateBalanced(lines);
+        await SavePostedEntryAsync(req, lines, ct);
+
+        await tx.CommitAsync(ct);
+    }
+    catch
+    {
+        await tx.RollbackAsync(ct);
+        throw;
+    }
+}`,
+                notes: ['Mẫu điển hình: Nợ 111/112 - Có 131.', 'Bắt buộc idempotency theo SourceVoucherId.']
+            },
+            '3.11': {
+                title: 'C# function - Ghi sổ chứng từ chi',
+                snippet: `public async Task PostPaymentAsync(VoucherPostingRequest req, CancellationToken ct)
+{
+    await using var tx = await _db.Database.BeginTransactionAsync(ct);
+    try
+    {
+        await EnsurePeriodOpenAsync(req.PostingDate, req.BranchId, ct);
+        await EnsureNotPostedAsync(req.VoucherId, ct);
+
+        var lines = req.Details.SelectMany(d => new[]
+        {
+            new JournalLineCreateDto(d.DebitAccountId, d.Amount, 0m, d.Description),
+            new JournalLineCreateDto(d.CreditAccountId, 0m, d.Amount, d.Description)
+        }).ToList();
+
+        ValidateBalanced(lines);
+        await SavePostedEntryAsync(req, lines, ct);
+
+        await tx.CommitAsync(ct);
+    }
+    catch
+    {
+        await tx.RollbackAsync(ct);
+        throw;
+    }
+}`,
+                notes: ['Mẫu điển hình: Nợ 331/chi phí - Có 111/112.', 'Có thể bổ sung check hạn mức trước khi ghi sổ.']
+            },
+            '3.12': {
+                title: 'C# function - Ghi sổ chứng từ nhập',
+                snippet: `public List<JournalLineCreateDto> BuildImportLines(VoucherPostingRequest req)
+{
+    var lines = new List<JournalLineCreateDto>();
+    foreach (var d in req.Details)
+    {
+        lines.Add(new JournalLineCreateDto(AccountIds.Inventory156, d.Amount, 0m, "Nhap kho"));
+        if (d.VatAmount > 0) lines.Add(new JournalLineCreateDto(AccountIds.VatInput1331, d.VatAmount, 0m, "VAT dau vao"));
+        lines.Add(new JournalLineCreateDto(AccountIds.Payable331, 0m, d.Amount + d.VatAmount, "Cong no NCC"));
+    }
+    ValidateBalanced(lines);
+    return lines;
+}`,
+                notes: ['Luôn tách riêng VAT đầu vào vào 1331.', 'Sau ghi sổ cần sync kho và kế toán.']
+            },
+            '3.13': {
+                title: 'C# function - Ghi sổ chứng từ xuất',
+                snippet: `public List<JournalLineCreateDto> BuildExportLines(VoucherPostingRequest req)
+{
+    var lines = new List<JournalLineCreateDto>();
+    foreach (var d in req.Details)
+    {
+        var vatOut = Math.Round(d.Amount * 0.1m, 0, MidpointRounding.AwayFromZero);
+        lines.Add(new JournalLineCreateDto(AccountIds.Receivable131, d.Amount + vatOut, 0m, "Phai thu KH"));
+        lines.Add(new JournalLineCreateDto(AccountIds.Revenue511, 0m, d.Amount, "Doanh thu"));
+        lines.Add(new JournalLineCreateDto(AccountIds.VatOutput33311, 0m, vatOut, "VAT dau ra"));
+        lines.Add(new JournalLineCreateDto(AccountIds.Cogs632, d.CostAmount, 0m, "Gia von"));
+        lines.Add(new JournalLineCreateDto(AccountIds.Inventory156, 0m, d.CostAmount, "Xuat kho"));
+    }
+    ValidateBalanced(lines);
+    return lines;
+}`,
+                notes: ['Phải sinh đủ 2 cặp bút toán: doanh thu và giá vốn.', 'Chặn âm kho trước khi post.']
+            },
+            '3.14': {
+                title: 'C# function - Hóa đơn mua vào',
+                snippet: `public async Task<Guid> CreatePurchaseInvoiceAsync(PurchaseInvoiceDto dto, CancellationToken ct)
+{
+    await using var tx = await _db.Database.BeginTransactionAsync(ct);
+    try
+    {
+        var duplicated = await _db.PurchaseInvoices.AnyAsync(x => x.VendorId == dto.VendorId && x.InvoiceNo == dto.InvoiceNo && x.InvoiceDate == dto.InvoiceDate, ct);
+        if (duplicated) throw new InvalidOperationException("ACC_DUPLICATE_INVOICE");
+
+        var id = await _invoiceRepo.CreatePurchaseInvoiceAsync(dto, ct);
+        await _invoiceRepo.LinkVoucherAsync(id, dto.VoucherId, ct);
+
+        await tx.CommitAsync(ct);
+        return id;
+    }
+    catch
+    {
+        await tx.RollbackAsync(ct);
+        throw;
+    }
+}`,
+                notes: ['Unique theo Vendor + InvoiceNo + InvoiceDate.', 'Invoice phải link được về voucher liên quan.']
+            },
+            '3.15': {
+                title: 'C# function - Hóa đơn bán ra',
+                snippet: `public async Task UpdateSalesInvoicePaymentStatusAsync(Guid invoiceId, CancellationToken ct)
+{
+    await using var tx = await _db.Database.BeginTransactionAsync(ct);
+    try
+    {
+        var invoice = await _invoiceRepo.GetSalesInvoiceAsync(invoiceId, ct);
+        var paidAmount = await _receiptRepo.GetPaidAmountByInvoiceAsync(invoiceId, ct);
+
+        invoice.PaymentStatus = paidAmount switch
+        {
+            <= 0m => "unpaid",
+            var x when x < invoice.TotalAmount => "partial",
+            _ => "paid"
+        };
+
+        await _invoiceRepo.SaveAsync(invoice, ct);
+        await tx.CommitAsync(ct);
+    }
+    catch
+    {
+        await tx.RollbackAsync(ct);
+        throw;
+    }
+}`,
+                notes: ['Trạng thái paid/unpaid/partial cập nhật tự động theo phiếu thu.', 'Phải truy vết đầy đủ invoice -> voucher -> journal.']
+            },
+            '3.16': {
+                title: 'C# function - Post backlog chứng từ chưa hạch toán',
+                snippet: `public async Task<int> PostBacklogAsync(DateTime toDate, string branchId, CancellationToken ct)
+{
+    var backlog = await _db.Vouchers
+        .Where(x => x.BranchId == branchId && x.PostingDate <= toDate && x.Status == "approved" && !x.IsPosted)
+        .OrderBy(x => x.PostingDate)
+        .ToListAsync(ct);
+
+    var posted = 0;
+    foreach (var voucher in backlog)
+    {
+        await using var tx = await _db.Database.BeginTransactionAsync(ct);
+        try
+        {
+            await _voucherPostingService.PostVoucherAsync(Map(voucher), ct);
+            await tx.CommitAsync(ct);
+        }
+        catch
+        {
+            await tx.RollbackAsync(ct);
+            throw;
+        }
+        posted++;
+    }
+    return posted;
+}`,
+                notes: ['Ưu tiên post theo thứ tự PostingDate để tránh lệch luồng.', 'Khóa kỳ chỉ cho phép khi backlog = 0.']
+            },
+            '3.17': {
+                title: 'C# function - Cấu hình kỳ kế toán',
+                snippet: `public async Task SaveAccountingConfigAsync(AccountingConfigDto dto, string userId, CancellationToken ct)
+{
+    await using var tx = await _db.Database.BeginTransactionAsync(ct);
+    try
+    {
+        await _configRepo.SaveAsync(dto, ct);
+        await _auditRepo.WriteAsync("ACC_CONFIG_UPDATED", userId, JsonSerializer.Serialize(dto), ct);
+        await _cache.RemoveAsync("acc-config", ct);
+
+        await tx.CommitAsync(ct);
+    }
+    catch
+    {
+        await tx.RollbackAsync(ct);
+        throw;
+    }
+}`,
+                notes: ['Dùng một nguồn config duy nhất cho lock/closing/report.', 'Mọi thay đổi config phải có audit log.']
+            }
+        };
+
+        const functionChildCodeSamples = {
+            '3.7': {
+                title: 'Function con đi kèm',
+                snippet: `private static string BucketByDays(int overdueDays)
+{
+    return overdueDays switch
+    {
+        <= 30 => "0-30",
+        <= 60 => "31-60",
+        <= 90 => "61-90",
+        _ => ">90"
+    };
+}`
+            },
+            '3.8': {
+                title: 'Function con đi kèm',
+                snippet: `private static string BucketByDays(int overdueDays)
+{
+    return overdueDays switch
+    {
+        <= 30 => "0-30",
+        <= 60 => "31-60",
+        <= 90 => "61-90",
+        _ => ">90"
+    };
+}`
+            },
+            '3.10': {
+                title: 'Function con đi kèm',
+                snippet: `private async Task EnsurePeriodOpenAsync(DateTime postingDate, string branchId, CancellationToken ct)
+{
+    var isLocked = await _db.AccountingPeriods.AnyAsync(x =>
+        x.BranchId == branchId && x.FromDate <= postingDate && x.ToDate >= postingDate && x.IsLocked, ct);
+    if (isLocked) throw new InvalidOperationException("ACC_PERIOD_LOCKED");
+}
+
+private async Task EnsureNotPostedAsync(Guid voucherId, CancellationToken ct)
+{
+    var exists = await _db.JournalEntries.AnyAsync(x => x.SourceVoucherId == voucherId, ct);
+    if (exists) throw new InvalidOperationException("ACC_ALREADY_POSTED");
+}
+
+private static void ValidateBalanced(IReadOnlyList<JournalLineCreateDto> lines)
+{
+    var debit = lines.Sum(x => x.Debit);
+    var credit = lines.Sum(x => x.Credit);
+    if (debit != credit) throw new InvalidOperationException("ACC_JOURNAL_NOT_BALANCED");
+}
+
+private async Task SavePostedEntryAsync(VoucherPostingRequest req, IReadOnlyList<JournalLineCreateDto> lines, CancellationToken ct)
+{
+    var entry = new JournalEntry { Id = Guid.NewGuid(), SourceVoucherId = req.VoucherId, PostingDate = req.PostingDate, BranchId = req.BranchId, Status = "posted" };
+    _db.JournalEntries.Add(entry);
+    _db.JournalLines.AddRange(lines.Select((x, i) => new JournalLine { Id = Guid.NewGuid(), JournalEntryId = entry.Id, LineNo = i + 1, AccountId = x.AccountId, Debit = x.Debit, Credit = x.Credit, Description = x.Description }));
+    await _db.SaveChangesAsync(ct);
+}
+
+private async Task ExecuteInTransactionAsync(Func<Task> action, CancellationToken ct)
+{
+    await using var tx = await _db.Database.BeginTransactionAsync(ct);
+    try
+    {
+        await action();
+        await tx.CommitAsync(ct);
+    }
+    catch
+    {
+        await tx.RollbackAsync(ct);
+        throw;
+    }
+}`
+            },
+            '3.11': {
+                title: 'Function con đi kèm',
+                snippet: `private async Task EnsurePeriodOpenAsync(DateTime postingDate, string branchId, CancellationToken ct)
+{
+    var isLocked = await _db.AccountingPeriods.AnyAsync(x =>
+        x.BranchId == branchId && x.FromDate <= postingDate && x.ToDate >= postingDate && x.IsLocked, ct);
+    if (isLocked) throw new InvalidOperationException("ACC_PERIOD_LOCKED");
+}
+
+private async Task EnsureNotPostedAsync(Guid voucherId, CancellationToken ct)
+{
+    var exists = await _db.JournalEntries.AnyAsync(x => x.SourceVoucherId == voucherId, ct);
+    if (exists) throw new InvalidOperationException("ACC_ALREADY_POSTED");
+}
+
+private static void ValidateBalanced(IReadOnlyList<JournalLineCreateDto> lines)
+{
+    var debit = lines.Sum(x => x.Debit);
+    var credit = lines.Sum(x => x.Credit);
+    if (debit != credit) throw new InvalidOperationException("ACC_JOURNAL_NOT_BALANCED");
+}
+
+private async Task SavePostedEntryAsync(VoucherPostingRequest req, IReadOnlyList<JournalLineCreateDto> lines, CancellationToken ct)
+{
+    var entry = new JournalEntry { Id = Guid.NewGuid(), SourceVoucherId = req.VoucherId, PostingDate = req.PostingDate, BranchId = req.BranchId, Status = "posted" };
+    _db.JournalEntries.Add(entry);
+    _db.JournalLines.AddRange(lines.Select((x, i) => new JournalLine { Id = Guid.NewGuid(), JournalEntryId = entry.Id, LineNo = i + 1, AccountId = x.AccountId, Debit = x.Debit, Credit = x.Credit, Description = x.Description }));
+    await _db.SaveChangesAsync(ct);
+}
+
+private async Task ExecuteInTransactionAsync(Func<Task> action, CancellationToken ct)
+{
+    await using var tx = await _db.Database.BeginTransactionAsync(ct);
+    try
+    {
+        await action();
+        await tx.CommitAsync(ct);
+    }
+    catch
+    {
+        await tx.RollbackAsync(ct);
+        throw;
+    }
+}`
+            },
+            '3.12': {
+                title: 'Function con đi kèm',
+                snippet: `private static void ValidateBalanced(IReadOnlyList<JournalLineCreateDto> lines)
+{
+    var debit = lines.Sum(x => x.Debit);
+    var credit = lines.Sum(x => x.Credit);
+    if (debit != credit) throw new InvalidOperationException("ACC_JOURNAL_NOT_BALANCED");
+}`
+            },
+            '3.13': {
+                title: 'Function con đi kèm',
+                snippet: `private static void ValidateBalanced(IReadOnlyList<JournalLineCreateDto> lines)
+{
+    var debit = lines.Sum(x => x.Debit);
+    var credit = lines.Sum(x => x.Credit);
+    if (debit != credit) throw new InvalidOperationException("ACC_JOURNAL_NOT_BALANCED");
+}
+
+private async Task EnsureNoNegativeInventoryAsync(IReadOnlyList<InventoryExportDetailDto> details, string branchId, CancellationToken ct)
+{
+    foreach (var d in details)
+    {
+        var qtyOnHand = await _inventoryRepo.GetOnHandQtyAsync(d.ItemId!.Value, branchId, ct);
+        if (qtyOnHand < d.Quantity)
+            throw new InvalidOperationException("INV_NEGATIVE_STOCK_BLOCKED");
+    }
+}`
+            },
+            '3.16': {
+                title: 'Function con đi kèm',
+                snippet: `private VoucherPostingRequest Map(Voucher voucher)
+{
+    return new VoucherPostingRequest(
+        voucher.Id,
+        voucher.VoucherNo,
+        Enum.Parse<VoucherType>(voucher.VoucherType),
+        voucher.PostingDate,
+        voucher.BranchId,
+        voucher.Currency,
+        voucher.FxRate,
+        voucher.CreatedBy,
+        voucher.Details.Select(d => new VoucherDetailDto(d.ItemId, d.CustomerId, d.VendorId, d.DebitAccountId, d.CreditAccountId, d.Amount, d.VatAmount, d.Description)).ToList()
+    );
+}`
+            }
+        };
+
         function normalizeText(value) {
             return (value || '').toString().trim().toLowerCase();
+        }
+
+        function getFunctionDtoSample(code) {
+            const dtoSamples = {
+                '3.1': {
+                    title: 'DTO - Danh mục tài khoản',
+                    snippet: `public sealed record AccountUpsertDto(
+    Guid? Id,
+    string Code,
+    string Name,
+    Guid? ParentId,
+    string Type,
+    bool IsPosting,
+    bool IsActive
+);
+
+public sealed record CreateChildAccountDto(
+    Guid ParentId,
+    string Name,
+    bool IsPosting
+);
+
+public sealed record AccountViewDto(
+    Guid Id,
+    string Code,
+    string Name,
+    string Type,
+    bool IsPosting,
+    bool IsActive
+);`,
+                    explain: ['AccountUpsertDto dùng cho create/update.', 'AccountViewDto dùng cho trả UI/report.']
+                },
+                '3.2': {
+                    title: 'DTO - Khóa/Mở kỳ',
+                    snippet: `public sealed record LockPeriodRequest(
+    DateTime FromDate,
+    DateTime ToDate,
+    string BranchId
+);
+
+public sealed record UnlockPeriodRequest(
+    DateTime FromDate,
+    DateTime ToDate,
+    string BranchId,
+    string Reason
+);`,
+                    explain: ['Unlock bắt buộc có lý do.', 'Có thể mở rộng thêm approval token.']
+                },
+                '3.3': {
+                    title: 'DTO - Nhật ký chung',
+                    snippet: `public sealed record JournalQueryDto(
+    DateTime FromDate,
+    DateTime ToDate,
+    string Scope,
+    string? BranchId,
+    string? VoucherType,
+    int Page,
+    int PageSize
+);
+
+public sealed record JournalRowDto(
+    DateTime PostingDate,
+    Guid JournalEntryId,
+    Guid AccountId,
+    decimal Debit,
+    decimal Credit,
+    string BranchId,
+    AccountViewDto AccountView
+);`,
+                    explain: ['Row trả cả AccountId và AccountView.', 'Scope branch/all dùng chung 1 contract.']
+                },
+                '3.4': {
+                    title: 'DTO - Sổ chi tiết tài khoản',
+                    snippet: `public sealed record AccountLedgerQueryDto(
+    Guid AccountId,
+    DateTime FromDate,
+    DateTime ToDate,
+    string Scope,
+    string? BranchId
+);
+
+public sealed record AccountLedgerRowDto(
+    DateTime PostingDate,
+    string VoucherNo,
+    decimal Debit,
+    decimal Credit,
+    decimal RunningBalance
+);`,
+                    explain: ['Query cố định theo 1 account.', 'Row có running balance để hiển thị trực tiếp.']
+                },
+                '3.5': {
+                    title: 'DTO - Bảng cân đối kế toán',
+                    snippet: `public sealed record BalanceSheetQueryDto(
+    DateTime AsOfDate,
+    string Scope,
+    string? BranchId
+);
+
+public sealed record BalanceSheetNodeDto(
+    string NodeCode,
+    string NodeName,
+    decimal Amount
+);
+
+public sealed record BalanceSheetDto(
+    IReadOnlyList<BalanceSheetNodeDto> Assets,
+    IReadOnlyList<BalanceSheetNodeDto> LiabilitiesAndEquity,
+    decimal TotalAssets,
+    decimal TotalLiabilitiesAndEquity
+);`,
+                    explain: ['Node DTO giúp map linh hoạt theo cây chỉ tiêu.', 'Tổng dùng để kiểm tra cân đối.']
+                },
+                '3.6': {
+                    title: 'DTO - Kết chuyển cuối kỳ',
+                    snippet: `public sealed record ClosingRunRequestDto(
+    int Year,
+    int Month,
+    string BranchId
+);
+
+public sealed record ClosingResultDto(
+    Guid JournalEntryId,
+    int TotalLines,
+    decimal TotalDebit,
+    decimal TotalCredit
+);`,
+                    explain: ['Run request tách rõ year/month/branch.', 'Result DTO trả đủ thông tin đối chiếu.']
+                },
+                '3.7': {
+                    title: 'DTO - Công nợ khách hàng 131',
+                    snippet: `public sealed record ArAgingQueryDto(
+    DateTime AsOfDate,
+    string Scope,
+    string? BranchId,
+    Guid? CustomerId
+);
+
+public sealed record ArAgingRowDto(
+    Guid CustomerId,
+    string CustomerCode,
+    decimal Balance,
+    string Bucket
+);`,
+                    explain: ['Bucket phục vụ báo cáo tuổi nợ.', 'Cho phép lọc 1 customer khi cần statement.']
+                },
+                '3.8': {
+                    title: 'DTO - Công nợ nhà cung cấp 331',
+                    snippet: `public sealed record ApAgingQueryDto(
+    DateTime AsOfDate,
+    string Scope,
+    string? BranchId,
+    Guid? VendorId
+);
+
+public sealed record ApAgingRowDto(
+    Guid VendorId,
+    string VendorCode,
+    decimal Balance,
+    string Bucket
+);`,
+                    explain: ['Thiết kế tương tự AR để thống nhất API.', 'Bucket dùng cho nợ đến hạn/quá hạn.']
+                },
+                '3.9': {
+                    title: 'DTO - Đối soát',
+                    snippet: `public sealed record ReconcileRequestDto(
+    DateTime FromDate,
+    DateTime ToDate,
+    string BranchId
+);
+
+public sealed record ReconcileIssueDto(
+    Guid IssueId,
+    string IssueType,
+    string Severity,
+    string Message,
+    string Status,
+    string? OwnerId
+);`,
+                    explain: ['Issue DTO chuẩn hóa cho dashboard xử lý.', 'Severity giúp chặn khóa kỳ theo mức độ.']
+                },
+                '3.10': {
+                    title: 'DTO - Hạch toán chứng từ thu',
+                    snippet: `public sealed record ReceiptVoucherDto(
+    Guid VoucherId,
+    string VoucherNo,
+    DateTime PostingDate,
+    string BranchId,
+    IReadOnlyList<ReceiptVoucherLineDto> Lines
+);
+
+public sealed record ReceiptVoucherLineDto(
+    Guid DebitAccountId,
+    Guid CreditAccountId,
+    decimal Amount,
+    string Description,
+    Guid? CustomerId
+);`,
+                    explain: ['Line tách debit/credit rõ để build journal.', 'Voucher DTO phù hợp cả API và command handler.']
+                },
+                '3.11': {
+                    title: 'DTO - Hạch toán chứng từ chi',
+                    snippet: `public sealed record PaymentVoucherDto(
+    Guid VoucherId,
+    string VoucherNo,
+    DateTime PostingDate,
+    string BranchId,
+    IReadOnlyList<PaymentVoucherLineDto> Lines
+);
+
+public sealed record PaymentVoucherLineDto(
+    Guid DebitAccountId,
+    Guid CreditAccountId,
+    decimal Amount,
+    string Description,
+    Guid? VendorId
+);`,
+                    explain: ['Cấu trúc giống receipt để tái sử dụng pipeline.', 'Thêm VendorId để update AP nhanh.']
+                },
+                '3.12': {
+                    title: 'DTO - Hạch toán chứng từ nhập',
+                    snippet: `public sealed record InventoryImportVoucherDto(
+    Guid VoucherId,
+    DateTime PostingDate,
+    string BranchId,
+    IReadOnlyList<InventoryImportLineDto> Lines
+);
+
+public sealed record InventoryImportLineDto(
+    Guid ItemId,
+    decimal Quantity,
+    decimal UnitCost,
+    decimal VatAmount,
+    Guid DebitAccountId,
+    Guid CreditAccountId
+);`,
+                    explain: ['Line chứa đủ thông tin cho kho và kế toán.', 'VAT tách riêng để đẩy 1331.']
+                },
+                '3.13': {
+                    title: 'DTO - Hạch toán chứng từ xuất',
+                    snippet: `public sealed record InventoryExportVoucherDto(
+    Guid VoucherId,
+    DateTime PostingDate,
+    string BranchId,
+    IReadOnlyList<InventoryExportLineDto> Lines
+);
+
+public sealed record InventoryExportLineDto(
+    Guid ItemId,
+    decimal Quantity,
+    decimal Amount,
+    decimal CostAmount,
+    Guid ReceivableAccountId
+);`,
+                    explain: ['Amount cho doanh thu, CostAmount cho giá vốn.', 'ItemId/Quantity dùng để check âm kho.']
+                },
+                '3.14': {
+                    title: 'DTO - Hóa đơn mua vào',
+                    snippet: `public sealed record PurchaseInvoiceDto(
+    Guid? Id,
+    string InvoiceNo,
+    DateTime InvoiceDate,
+    Guid VendorId,
+    decimal Subtotal,
+    decimal VatAmount,
+    decimal TotalAmount,
+    Guid VoucherId
+);`,
+                    explain: ['Một DTO dùng cho create/update.', 'VoucherId để link truy vết ngay từ đầu.']
+                },
+                '3.15': {
+                    title: 'DTO - Hóa đơn bán ra',
+                    snippet: `public sealed record SalesInvoiceDto(
+    Guid Id,
+    string InvoiceNo,
+    DateTime InvoiceDate,
+    Guid CustomerId,
+    decimal TotalAmount,
+    decimal PaidAmount,
+    string PaymentStatus
+);`,
+                    explain: ['PaymentStatus là dữ liệu dẫn xuất nhưng lưu để truy vấn nhanh.', 'PaidAmount phục vụ UI đối chiếu tức thì.']
+                },
+                '3.16': {
+                    title: 'DTO - Backlog chứng từ chưa hạch toán',
+                    snippet: `public sealed record PostBacklogRequestDto(
+    DateTime ToDate,
+    string BranchId
+);
+
+public sealed record PostBacklogResultDto(
+    int TotalCandidates,
+    int Posted,
+    int Failed,
+    IReadOnlyList<string> Errors
+);`,
+                    explain: ['Result DTO giúp theo dõi batch rõ ràng.', 'Errors list hỗ trợ retry theo chứng từ lỗi.']
+                },
+                '3.17': {
+                    title: 'DTO - Cấu hình kỳ kế toán',
+                    snippet: `public sealed record AccountingConfigDto(
+    int FiscalYearStartMonth,
+    int DefaultLockDay,
+    bool AllowBackdatePosting,
+    string Timezone,
+    bool EnableAutoClosing
+);`,
+                    explain: ['Một nguồn config cho lock/closing/report.', 'DefaultLockDay phục vụ rule ngày khóa mặc định hàng tháng.']
+                }
+            };
+
+            return dtoSamples[code] || null;
+        }
+
+        function getFunctionAdvancedCodeSample(code) {
+            const samples = {
+                '3.1': {
+                    title: 'Code bổ sung - Repository + Validator',
+                    snippet: `public async Task<string> GenerateNextChildCodeAsync(string parentCode, CancellationToken ct)
+{
+    var siblingCodes = await _db.Accounts
+        .Where(x => x.Code.StartsWith(parentCode + "."))
+        .Select(x => x.Code)
+        .ToListAsync(ct);
+
+    var maxSeq = siblingCodes
+        .Select(code => code.Split('.').LastOrDefault())
+        .Select(last => int.TryParse(last, out var n) ? n : 0)
+        .DefaultIfEmpty(0)
+        .Max();
+
+    return $"{parentCode}.{(maxSeq + 1):D2}";
+}
+
+public async Task ValidateAccountCodeAsync(string code, Guid? ignoreId, CancellationToken ct)
+{
+    var duplicated = await _db.Accounts.AnyAsync(x => x.Code == code && x.Id != ignoreId, ct);
+    if (duplicated) throw new InvalidOperationException("ACC_DUPLICATE_CODE");
+}
+
+public async Task<Account> GetAccountRequiredAsync(Guid id, CancellationToken ct)
+{
+    return await _db.Accounts.FirstOrDefaultAsync(x => x.Id == id, ct)
+        ?? throw new KeyNotFoundException("ACC_ACCOUNT_NOT_FOUND");
+}`,
+                    explain: ['GenerateNextChildCodeAsync tạo mã con tự tăng theo mã cha (ví dụ 111 -> 111.01, 111.02).', 'Tách validator để tái dùng ở create/update.', 'Ném lỗi domain rõ ràng để FE map thông báo.']
+                },
+                '3.2': {
+                    title: 'Code bổ sung - API khóa/mở kỳ',
+                    snippet: `[HttpPost("period/lock")]
+public async Task<IActionResult> Lock([FromBody] LockPeriodRequest req, CancellationToken ct)
+{
+    await _service.LockPeriodAsync(req.FromDate, req.ToDate, req.BranchId, User.Identity!.Name!, ct);
+    return Ok(new { success = true });
+}`,
+                    explain: ['API mỏng, toàn bộ nghiệp vụ nằm ở service.', 'Dễ unit test và dễ mở rộng phân quyền.']
+                },
+                '3.3': {
+                    title: 'Code bổ sung - DTO query nhật ký',
+                    snippet: `public sealed record JournalQuery(
+    DateTime FromDate,
+    DateTime ToDate,
+    string Scope,
+    string? BranchId,
+    string? VoucherType,
+    int Page,
+    int PageSize
+);`,
+                    explain: ['Chuẩn hóa query để không phải truyền quá nhiều tham số rời.', 'Dễ versioning API báo cáo.']
+                },
+                '3.4': {
+                    title: 'Code bổ sung - Drill-down voucher',
+                    snippet: `public async Task<IReadOnlyList<VoucherLinkVm>> GetVoucherLinksAsync(Guid accountId, DateTime from, DateTime to, string branchId, CancellationToken ct)
+{
+    return await _db.JournalLines
+        .Where(x => x.AccountId == accountId && x.PostingDate >= from && x.PostingDate <= to && x.BranchId == branchId)
+        .Select(x => new VoucherLinkVm(x.JournalEntry.SourceVoucherId, x.JournalEntry.SourceVoucherNo))
+        .Distinct()
+        .ToListAsync(ct);
+}`,
+                    explain: ['Đảm bảo trace ngược từ sổ chi tiết về chứng từ gốc.', 'Distinct để tránh trùng voucher do nhiều dòng hạch toán.']
+                },
+                '3.5': {
+                    title: 'Code bổ sung - Mapper chỉ tiêu BCĐKT',
+                    snippet: `public decimal SumByNode(string nodeCode, IReadOnlyDictionary<Guid, decimal> balances)
+{
+    var accountIds = _nodeMap[nodeCode];
+    return accountIds.Sum(id => balances.TryGetValue(id, out var v) ? v : 0m);
+}`,
+                    explain: ['Tách map chỉ tiêu ra khỏi service để dễ bảo trì.', 'Không hard-code danh sách tài khoản trong business service.']
+                },
+                '3.6': {
+                    title: 'Code bổ sung - Reverse kết chuyển',
+                    snippet: `public async Task ReverseClosingAsync(int year, int month, string branchId, string userId, CancellationToken ct)
+{
+    var entry = await _closingRepo.GetEntryAsync(year, month, branchId, ct);
+    if (entry is null) throw new InvalidOperationException("ACC_CLOSING_NOT_FOUND");
+    await _journalWriter.ReverseEntryAsync(entry.Id, userId, ct);
+}`,
+                    explain: ['Hỗ trợ reverse có kiểm soát khi cần mở lại số liệu.', 'Nên chặn reverse nếu kỳ sau đã khóa.']
+                },
+                '3.7': {
+                    title: 'Code bổ sung - Statement theo khách hàng',
+                    snippet: `public async Task<CustomerStatementVm> GetCustomerStatementAsync(Guid customerId, DateTime from, DateTime to, string scope, string? branchId, CancellationToken ct)
+{
+    var rows = await _arRepo.GetStatementRowsAsync(customerId, from, to, scope, branchId, ct);
+    return new CustomerStatementVm(customerId, rows, rows.Sum(x => x.Debit) - rows.Sum(x => x.Credit));
+}`,
+                    explain: ['Statement giúp kiểm tra công nợ theo đối tượng cụ thể.', 'Tổng cuối dùng cho đối chiếu với báo cáo aging.']
+                },
+                '3.8': {
+                    title: 'Code bổ sung - Statement theo NCC',
+                    snippet: `public async Task<VendorStatementVm> GetVendorStatementAsync(Guid vendorId, DateTime from, DateTime to, string scope, string? branchId, CancellationToken ct)
+{
+    var rows = await _apRepo.GetStatementRowsAsync(vendorId, from, to, scope, branchId, ct);
+    return new VendorStatementVm(vendorId, rows, rows.Sum(x => x.Credit) - rows.Sum(x => x.Debit));
+}`,
+                    explain: ['Phân tách logic AP với AR để tránh nhầm dấu số dư.', 'Giúp kế toán theo dõi hạn thanh toán theo NCC.']
+                },
+                '3.9': {
+                    title: 'Code bổ sung - Ticket xử lý lệch',
+                    snippet: `public async Task AssignIssueAsync(Guid issueId, string ownerId, DateTime dueDate, CancellationToken ct)
+{
+    var issue = await _reconRepo.GetIssueAsync(issueId, ct) ?? throw new KeyNotFoundException();
+    issue.OwnerId = ownerId;
+    issue.DueDate = dueDate;
+    issue.Status = "in_progress";
+    await _reconRepo.SaveAsync(issue, ct);
+}`,
+                    explain: ['Tạo luồng xử lý issue rõ owner/deadline.', 'Phục vụ kiểm soát trước khóa sổ.']
+                },
+                '3.10': {
+                    title: 'Code bổ sung - Command handler phiếu thu',
+                    snippet: `public sealed class PostReceiptCommandHandler
+{
+    public async Task Handle(PostReceiptCommand cmd, CancellationToken ct)
+    {
+        var req = _mapper.ToPostingRequest(cmd);
+        await _postingService.PostReceiptAsync(req, ct);
+    }
+}`,
+                    explain: ['Tách command handler giúp clean architecture rõ ràng.', 'Dễ thêm validation pipeline trước khi vào service.']
+                },
+                '3.11': {
+                    title: 'Code bổ sung - Command handler phiếu chi',
+                    snippet: `public sealed class PostPaymentCommandHandler
+{
+    public async Task Handle(PostPaymentCommand cmd, CancellationToken ct)
+    {
+        var req = _mapper.ToPostingRequest(cmd);
+        await _postingService.PostPaymentAsync(req, ct);
+    }
+}`,
+                    explain: ['Tách nhánh xử lý payment độc lập receipt.', 'Giúp mở rộng approval flow theo loại chứng từ.']
+                },
+                '3.12': {
+                    title: 'Code bổ sung - Sync kho sau ghi sổ nhập',
+                    snippet: `public async Task ApplyInventoryInAsync(Guid voucherId, string branchId, IReadOnlyList<InventoryLineDto> lines, CancellationToken ct)
+{
+    foreach (var line in lines)
+        await _inventoryRepo.IncreaseAsync(line.ItemId, branchId, line.Quantity, line.UnitCost, ct);
+
+    await _inventoryRepo.MarkVoucherAppliedAsync(voucherId, ct);
+}`,
+                    explain: ['Luồng kho và kế toán phải đồng bộ theo voucher.', 'Đánh dấu idempotent để tránh cộng tồn 2 lần.']
+                },
+                '3.13': {
+                    title: 'Code bổ sung - Sync kho sau ghi sổ xuất',
+                    snippet: `public async Task ApplyInventoryOutAsync(Guid voucherId, string branchId, IReadOnlyList<InventoryLineDto> lines, CancellationToken ct)
+{
+    foreach (var line in lines)
+        await _inventoryRepo.DecreaseAsync(line.ItemId, branchId, line.Quantity, ct);
+
+    await _inventoryRepo.MarkVoucherAppliedAsync(voucherId, ct);
+}`,
+                    explain: ['Giảm tồn phải đi cùng ghi sổ giá vốn.', 'Nên gọi trong cùng transaction nghiệp vụ.']
+                },
+                '3.14': {
+                    title: 'Code bổ sung - Link invoice với voucher/journal',
+                    snippet: `public async Task LinkInvoiceArtifactsAsync(Guid invoiceId, Guid voucherId, Guid journalEntryId, CancellationToken ct)
+{
+    await _invoiceRepo.LinkVoucherAsync(invoiceId, voucherId, ct);
+    await _invoiceRepo.LinkJournalAsync(invoiceId, journalEntryId, ct);
+}`,
+                    explain: ['Đảm bảo truy vết 3 lớp: hóa đơn -> chứng từ -> sổ nhật ký.', 'Hữu ích cho đối chiếu VAT và kiểm toán.']
+                },
+                '3.15': {
+                    title: 'Code bổ sung - Rebuild payment status batch',
+                    snippet: `public async Task<int> RebuildInvoicePaymentStatusAsync(DateTime fromDate, DateTime toDate, CancellationToken ct)
+{
+    var invoices = await _invoiceRepo.GetSalesInvoicesAsync(fromDate, toDate, ct);
+    foreach (var inv in invoices)
+        await UpdateSalesInvoicePaymentStatusAsync(inv.Id, ct);
+    return invoices.Count;
+}`,
+                    explain: ['Batch repair dữ liệu khi migrate hoặc fix sai lệch.', 'Giúp đồng bộ trạng thái hóa đơn với dữ liệu thu tiền thực tế.']
+                },
+                '3.16': {
+                    title: 'Code bổ sung - API post backlog',
+                    snippet: `[HttpPost("vouchers/backlog/post")]
+public async Task<IActionResult> PostBacklog([FromBody] PostBacklogRequest req, CancellationToken ct)
+{
+    var count = await _service.PostBacklogAsync(req.ToDate, req.BranchId, ct);
+    return Ok(new { posted = count });
+}`,
+                    explain: ['Expose endpoint để chạy tay hoặc scheduler.', 'Trả số lượng chứng từ đã post để theo dõi vận hành.']
+                },
+                '3.17': {
+                    title: 'Code bổ sung - Đọc config có cache',
+                    snippet: `public async Task<AccountingConfigDto> GetAccountingConfigAsync(CancellationToken ct)
+{
+    return await _cache.GetOrCreateAsync("acc-config", async entry =>
+    {
+        entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+        return await _configRepo.GetAsync(ct);
+    }) ?? new AccountingConfigDto();
+}`,
+                    explain: ['Giảm tải DB cho module lock/closing/report.', 'Sau update config phải clear cache để tránh đọc stale.']
+                }
+            };
+
+            return samples[code] || null;
         }
 
         function renderFunctionList(keyword = '') {
@@ -108,6 +1188,30 @@
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#039;');
         }
+
+            function getFunctionCodeSample(code) {
+                return functionCodeSamples[code] || null;
+            }
+
+            function buildDefaultChildCodeSample(code) {
+                return {
+                    title: `Function con chuẩn - ${code}`,
+                    snippet: `private static void ValidateRequiredFields(object request)
+    {
+        if (request is null)
+            throw new ArgumentNullException(nameof(request));
+    }
+
+    private async Task WriteAuditAsync(string action, string userId, object payload, CancellationToken ct)
+    {
+        await _auditRepo.WriteAsync(action, userId, JsonSerializer.Serialize(payload), ct);
+    }`
+                };
+            }
+
+            function getFunctionChildCodeSample(code) {
+                return functionChildCodeSamples[code] || buildDefaultChildCodeSample(code);
+            }
 
         function buildDetailedFlow(item) {
             const precheckSteps = item.rules.slice(0, 2);
@@ -173,6 +1277,10 @@
 
             const detailedFlow = buildDetailedFlow(item);
             const errorBranches = buildErrorBranches(item);
+            const codeSample = getFunctionCodeSample(item.code);
+            const childCodeSample = getFunctionChildCodeSample(item.code);
+            const advancedCodeSample = getFunctionAdvancedCodeSample(item.code);
+            const dtoSample = getFunctionDtoSample(item.code);
 
             const body = document.getElementById('modal-body');
             body.innerHTML = `
@@ -203,6 +1311,54 @@
                     <h4 class="text-sm font-semibold text-emerald-300 uppercase tracking-wide mb-2">Định khoản hoặc xử lý mẫu</h4>
                     <p class="text-sm text-slate-200 bg-slate-900 rounded-lg p-3 border border-slate-700 whitespace-pre-line">${escapeHtml(item.posting)}</p>
                 </section>
+                ${dtoSample ? `
+                <section class="mb-4">
+                    <h4 class="text-sm font-semibold text-teal-300 uppercase tracking-wide mb-2">${escapeHtml(dtoSample.title)}</h4>
+                    <pre class="overflow-auto rounded bg-slate-950 p-3 text-xs text-slate-200 border border-slate-700"><code>${escapeHtml(dtoSample.snippet)}</code></pre>
+                    ${Array.isArray(dtoSample.explain) && dtoSample.explain.length ? `
+                    <div class="mt-3 rounded-lg border border-slate-700 bg-slate-900 p-3">
+                        <p class="text-xs uppercase tracking-wide text-teal-300 font-semibold mb-2">Giải thích DTO</p>
+                        <ul class="list-disc list-inside text-sm text-slate-300 space-y-1">
+                            ${dtoSample.explain.map(line => `<li>${escapeHtml(line)}</li>`).join('')}
+                        </ul>
+                    </div>
+                    ` : ''}
+                </section>
+                ` : ''}
+                ${codeSample ? `
+                <section class="mb-4">
+                    <h4 class="text-sm font-semibold text-cyan-300 uppercase tracking-wide mb-2">${escapeHtml(codeSample.title)}</h4>
+                    <pre class="overflow-auto rounded bg-slate-950 p-3 text-xs text-slate-200 border border-slate-700"><code>${escapeHtml(codeSample.snippet)}</code></pre>
+                    ${Array.isArray(codeSample.notes) && codeSample.notes.length ? `
+                    <div class="mt-3 rounded-lg border border-slate-700 bg-slate-900 p-3">
+                        <p class="text-xs uppercase tracking-wide text-cyan-300 font-semibold mb-2">Ghi chú triển khai</p>
+                        <ul class="list-disc list-inside text-sm text-slate-300 space-y-1">
+                            ${codeSample.notes.map(note => `<li>${escapeHtml(note)}</li>`).join('')}
+                        </ul>
+                    </div>
+                    ` : ''}
+                </section>
+                ` : ''}
+                ${childCodeSample ? `
+                <section class="mb-4">
+                    <h4 class="text-sm font-semibold text-sky-300 uppercase tracking-wide mb-2">${escapeHtml(childCodeSample.title)}</h4>
+                    <pre class="overflow-auto rounded bg-slate-950 p-3 text-xs text-slate-200 border border-slate-700"><code>${escapeHtml(childCodeSample.snippet)}</code></pre>
+                </section>
+                ` : ''}
+                ${advancedCodeSample ? `
+                <section class="mb-4">
+                    <h4 class="text-sm font-semibold text-indigo-300 uppercase tracking-wide mb-2">${escapeHtml(advancedCodeSample.title)}</h4>
+                    <pre class="overflow-auto rounded bg-slate-950 p-3 text-xs text-slate-200 border border-slate-700"><code>${escapeHtml(advancedCodeSample.snippet)}</code></pre>
+                    ${Array.isArray(advancedCodeSample.explain) && advancedCodeSample.explain.length ? `
+                    <div class="mt-3 rounded-lg border border-slate-700 bg-slate-900 p-3">
+                        <p class="text-xs uppercase tracking-wide text-indigo-300 font-semibold mb-2">Giải thích code chi tiết</p>
+                        <ul class="list-disc list-inside text-sm text-slate-300 space-y-1">
+                            ${advancedCodeSample.explain.map(line => `<li>${escapeHtml(line)}</li>`).join('')}
+                        </ul>
+                    </div>
+                    ` : ''}
+                </section>
+                ` : ''}
                 <section class="mb-4">
                     <h4 class="text-sm font-semibold text-amber-300 uppercase tracking-wide mb-2">Rule kiểm soát bắt buộc</h4>
                     <ul class="list-disc list-inside text-sm text-slate-300 space-y-1">
