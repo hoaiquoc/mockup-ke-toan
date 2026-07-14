@@ -4521,7 +4521,9 @@
         'pm-report': 'pm-report.html',
         'dev-ba-spec': 'dev-ba-spec.html',
         'team-allocation': 'team-allocation.html',
-        'function-business-docs': 'function-business-docs.html'
+        'function-business-docs': 'function-business-docs.html',
+        'system-operation-playbook': 'system-operation-playbook.html',
+        'business-config': 'business-config.html'
     };
     const businessDocs = {
         'dashboard': {
@@ -5084,6 +5086,18 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z"/>
                     </svg>
                     <span>Nghiệp vụ 17 chức năng</span>
+                </button>
+                <button onclick="showModule('system-operation-playbook')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-system-operation-playbook">
+                    <svg class="w-5 h-5 text-teal-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4m2-6h12a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2z"/>
+                    </svg>
+                    <span>Playbook vận hành</span>
+                </button>
+                <button onclick="showModule('business-config')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-all flex items-center gap-3" id="nav-business-config">
+                    <svg class="w-5 h-5 text-sky-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <span>Cấu hình nghiệp vụ</span>
                 </button>
             </nav>
         `;

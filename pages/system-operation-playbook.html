@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Playbook Vận Hành Hệ Thống - Kế Toán Dễ Dàng</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../styles.css">
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen" data-page-module="system-operation-playbook">
+    <div class="flex h-screen">
+        <aside class="w-64 glassmorphism border-r border-slate-700 flex flex-col">
+            <div class="p-6 border-b border-slate-700">
+                <h1 class="text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">Kế Toán Dễ Dàng</h1>
+                <p class="text-xs text-slate-400 mt-1">Định hướng triển khai</p>
+            </div>
+            <nav class="flex-1 p-4 space-y-2 overflow-auto"></nav>
+        </aside>
+
+        <main class="flex-1 overflow-auto p-6">
+            <div id="module-system-operation-playbook" class="module hidden fade-in">
+                <header class="mb-6">
+                    <h2 class="text-3xl font-bold text-teal-300">Playbook Vận Hành Hệ Thống Định Khoản</h2>
+                    <p class="text-slate-400 mt-2">Trang này minh họa cách dùng hệ thống xác định bút toán theo Rule + Mapping + Resolver để tránh hard-code và dễ migration hệ thống mới.</p>
+                </header>
+
+                <section class="glassmorphism rounded-xl p-6 border border-cyan-500/30 mb-6">
+                    <h3 class="text-lg font-semibold text-cyan-300 mb-3">Bắt đầu trong 5 phút (cho cả Dev và Kế toán mới)</h3>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 text-sm">
+                        <div class="rounded-lg border border-slate-700 bg-slate-800/60 p-4">
+                            <p class="font-semibold text-cyan-200 mb-2">Nếu bạn là Dev chưa biết kế toán</p>
+                            <ol class="list-decimal list-inside text-slate-300 space-y-1">
+                                <li>Không cần nhớ 131/331/511 ngay, chỉ cần hiểu RoleKey.</li>
+                                <li>Luồng chuẩn: Event -> Rule -> Resolve Role -> Journal.</li>
+                                <li>Nếu thiếu mapping, fail fast và báo lỗi cấu hình, không đoán GUID.</li>
+                            </ol>
+                        </div>
+                        <div class="rounded-lg border border-slate-700 bg-slate-800/60 p-4">
+                            <p class="font-semibold text-cyan-200 mb-2">Nếu bạn là Kế toán mới</p>
+                            <ol class="list-decimal list-inside text-slate-300 space-y-1">
+                                <li>Chọn đúng loại chứng từ và chi nhánh.</li>
+                                <li>Kiểm tra phần "Ví dụ đời thường" trong từng tab.</li>
+                                <li>Đối chiếu nhanh bằng Sổ nhật ký và Sổ chi tiết sau khi ghi nhận.</li>
+                            </ol>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="glassmorphism rounded-xl p-6 border border-teal-500/30 mb-6">
+                    <h3 class="text-lg font-semibold text-teal-300 mb-3">Sơ đồ vận hành 6 bước</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 text-sm">
+                        <div class="rounded-lg border border-slate-700 bg-slate-800/60 p-3"><p class="font-semibold text-teal-200">1. Chuẩn hóa Event</p><p class="text-slate-300 mt-1">Chứng từ được đổi thành event chuẩn.</p></div>
+                        <div class="rounded-lg border border-slate-700 bg-slate-800/60 p-3"><p class="font-semibold text-teal-200">2. Chọn Rule</p><p class="text-slate-300 mt-1">Tìm rule theo event + điều kiện + ngày hiệu lực.</p></div>
+                        <div class="rounded-lg border border-slate-700 bg-slate-800/60 p-3"><p class="font-semibold text-teal-200">3. Resolve Account</p><p class="text-slate-300 mt-1">RoleKey -> AccountId theo branch/company/global.</p></div>
+                        <div class="rounded-lg border border-slate-700 bg-slate-800/60 p-3"><p class="font-semibold text-teal-200">4. Tính số tiền</p><p class="text-slate-300 mt-1">Áp công thức VAT, giá vốn, phân bổ.</p></div>
+                        <div class="rounded-lg border border-slate-700 bg-slate-800/60 p-3"><p class="font-semibold text-teal-200">5. Validate cân đối</p><p class="text-slate-300 mt-1">Tổng debit = tổng credit, role không thiếu.</p></div>
+                        <div class="rounded-lg border border-slate-700 bg-slate-800/60 p-3"><p class="font-semibold text-teal-200">6. Ghi Journal</p><p class="text-slate-300 mt-1">Ghi sổ trong transaction + lưu trace version.</p></div>
+                    </div>
+                </section>
+
+                <section class="glassmorphism rounded-xl p-6 border border-slate-700 mb-6">
+                    <div class="flex flex-wrap gap-2 mb-4" id="playbook-tabs"></div>
+                    <div id="playbook-content" class="space-y-4"></div>
+                </section>
+
+                <section class="glassmorphism rounded-xl p-6 border border-emerald-500/30 mb-6">
+                    <h3 class="text-lg font-semibold text-emerald-300 mb-3">Playbook theo đúng 17 chức năng</h3>
+                    <p class="text-sm text-slate-300 mb-4">Mỗi chức năng là 1 tab riêng, có mapping role cụ thể để resolve account (131/331/511/632/3331/133...) mà không hard-code GUID.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                        <div>
+                            <label class="block text-xs uppercase tracking-wide text-slate-400 mb-2">Lọc theo nhóm</label>
+                            <select id="playbook-17-group" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500">
+                                <option value="all">Tất cả nhóm</option>
+                                <option value="master">Danh mục & Cấu hình</option>
+                                <option value="report">Sổ & Báo cáo</option>
+                                <option value="posting">Hạch toán chứng từ</option>
+                                <option value="control">Đối soát & Vận hành</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-xs uppercase tracking-wide text-slate-400 mb-2">Tìm theo mã, tên, event hoặc role</label>
+                            <input id="playbook-17-search" type="text" placeholder="Ví dụ: 3.13, VAT, ROLE_AR_131..." class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500">
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2 mb-4" id="playbook-17-tabs"></div>
+                    <div id="playbook-17-content" class="space-y-4"></div>
+                </section>
+
+                <section class="glassmorphism rounded-xl p-6 border border-amber-500/30">
+                    <h3 class="text-lg font-semibold text-amber-300 mb-3">Checklist go-live không cần rà soát seed data</h3>
+                    <ol class="list-decimal list-inside text-sm text-slate-300 space-y-1">
+                        <li>Chuẩn hóa RoleKey và EventType chuẩn, không gắn GUID vào code.</li>
+                        <li>Import rule/mapping bằng file config versioned (json/yaml).</li>
+                        <li>Chạy dry-run replay 1 kỳ dữ liệu và so sánh trial balance.</li>
+                        <li>Bật cảnh báo nếu role thiếu mapping tại branch đang xử lý.</li>
+                        <li>Lưu trace RuleVersion + MappingVersion trên mỗi journal entry.</li>
+                    </ol>
+                </section>
+
+                <section class="glassmorphism rounded-xl p-6 border border-sky-500/30 mt-6">
+                    <h3 class="text-lg font-semibold text-sky-300 mb-3">Demo: Chọn khoản Thu/Chi tự lên đúng bộ tài khoản</h3>
+                    <p class="text-sm text-slate-300 mb-4">Mục tiêu: Kế toán chỉ chọn <strong>Khoản Thu/Chi</strong>, hệ thống tự resolve bộ tài khoản đúng theo rule (không chọn GUID thủ công).</p>
+
+                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                        <div class="rounded-lg border border-slate-700 bg-slate-900/70 p-4 space-y-3">
+                            <div>
+                                <label class="block text-xs uppercase tracking-wide text-slate-400 mb-2">Loại chứng từ</label>
+                                <select id="demo-voucher-type" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-sky-500">
+                                    <option value="receipt">Phiếu Thu</option>
+                                    <option value="payment">Phiếu Chi</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs uppercase tracking-wide text-slate-400 mb-2">Khoản nghiệp vụ</label>
+                                <select id="demo-category" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-sky-500"></select>
+                            </div>
+                            <div>
+                                <label class="block text-xs uppercase tracking-wide text-slate-400 mb-2">Số tiền</label>
+                                <input id="demo-amount" type="number" min="0" step="1000" value="1000000" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-sky-500">
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs uppercase tracking-wide text-slate-400 mb-2">Chi nhánh</label>
+                                    <select id="demo-branch" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-sky-500">
+                                        <option value="CN01">CN01 - Chi nhánh Quận 1</option>
+                                        <option value="CN02">CN02 - Chi nhánh Quận 3</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs uppercase tracking-wide text-slate-400 mb-2">Ngày hạch toán</label>
+                                    <input id="demo-posting-date" type="date" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-sky-500">
+                                </div>
+                            </div>
+
+                            <div class="rounded-lg border border-slate-700 bg-slate-800/60 p-3">
+                                <p class="text-xs uppercase tracking-wide text-sky-300 font-semibold mb-2">Bộ tài khoản hệ thống tự chọn</p>
+                                <ul class="text-sm text-slate-300 space-y-1" id="demo-account-preview"></ul>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div class="rounded-lg border border-slate-700 bg-slate-900 p-4">
+                                <p class="text-xs uppercase tracking-wide text-sky-300 font-semibold mb-2">Bút toán sinh tự động (mô phỏng)</p>
+                                <pre class="overflow-auto rounded bg-slate-950 p-3 text-xs text-slate-200 border border-slate-700"><code id="demo-journal-lines"></code></pre>
+                            </div>
+                            <div class="rounded-lg border border-slate-700 bg-slate-900 p-4">
+                                <p class="text-xs uppercase tracking-wide text-sky-300 font-semibold mb-2">Code C# gợi ý cho Dev</p>
+                                <pre class="overflow-auto rounded bg-slate-950 p-3 text-xs text-slate-200 border border-slate-700"><code id="demo-csharp-code"></code></pre>
+                            </div>
+
+                            <div class="rounded-lg border border-cyan-500/30 bg-slate-900 p-4">
+                                <p class="text-xs uppercase tracking-wide text-cyan-300 font-semibold mb-2">Resolver ưu tiên theo dimension (pseudo-code đầy đủ)</p>
+                                <pre class="overflow-auto rounded bg-slate-950 p-3 text-xs text-slate-200 border border-slate-700"><code id="demo-resolver-dimension-code"></code></pre>
+                            </div>
+
+                            <div class="rounded-lg border border-emerald-500/30 bg-slate-900 p-4">
+                                <div class="flex items-center justify-between gap-3 mb-3">
+                                    <p class="text-xs uppercase tracking-wide text-emerald-300 font-semibold">Checklist thao tác cho kế toán mới (Flow chuẩn)</p>
+                                    <button id="run-flow-checklist" type="button" class="rounded-lg border border-emerald-500/50 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/20">Chạy checklist</button>
+                                </div>
+                                <p class="text-xs text-slate-400 mb-3">Mỗi bước sẽ có trạng thái <span class="text-emerald-300 font-semibold">PASS</span> hoặc <span class="text-rose-300 font-semibold">FAIL</span> để biết đang vướng ở đâu.</p>
+                                <div id="flow-checklist-steps" class="space-y-2"></div>
+                                <div id="flow-checklist-summary" class="mt-3 text-xs text-slate-300"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script src="../app.js"></script>
+    <script>
+        const playbookBlocks = {
+            architecture: {
+                title: 'Kiến trúc tổng thể',
+                intro: 'Dùng Posting Event + Posting Rule + Account Resolver để service nghiệp vụ không chạm trực tiếp vào AccountId.',
+                code: `public sealed record PostingEvent(
+    string EventType,
+    DateTime PostingDate,
+    string BranchId,
+    string Currency,
+    IReadOnlyDictionary<string, decimal> Metrics,
+    IReadOnlyDictionary<string, string> Dimensions
+);
+
+public sealed record PostingRule(
+    string RuleKey,
+    string EventType,
+    string ConditionJson,
+    string DebitRole,
+    string CreditRole,
+    string FormulaJson,
+    int Version,
+    DateTime EffectiveFrom,
+    DateTime? EffectiveTo
+);`
+            },
+            mapping: {
+                title: 'Mapping role sang account',
+                intro: 'Không hard-code GUID. Resolve theo scope: branch -> company -> global.',
+                code: `public async Task<Guid> ResolveAccountIdAsync(string roleKey, string branchId, DateTime postingDate, CancellationToken ct)
+{
+    var byBranch = await _mappingRepo.FindAsync("branch", branchId, roleKey, postingDate, ct);
+    if (byBranch is not null) return byBranch.AccountId;
+
+    var byCompany = await _mappingRepo.FindAsync("company", _companyId, roleKey, postingDate, ct);
+    if (byCompany is not null) return byCompany.AccountId;
+
+    var global = await _mappingRepo.FindAsync("global", "default", roleKey, postingDate, ct);
+    if (global is not null) return global.AccountId;
+
+    throw new InvalidOperationException($"MISSING_ROLE_MAPPING:{roleKey}:{branchId}");
+}`
+            },
+            transaction: {
+                title: 'Engine ghi sổ có transaction',
+                intro: 'Toàn bộ process rule + resolve + write journal chạy trong 1 transaction.',
+                code: `public async Task<Guid> PostAsync(PostingEvent evt, CancellationToken ct)
+{
+    await using var tx = await _db.Database.BeginTransactionAsync(ct);
+    try
+    {
+        var rule = await _ruleSelector.SelectAsync(evt, ct);
+        var debitId = await _resolver.ResolveAccountIdAsync(rule.DebitRole, evt.BranchId, evt.PostingDate, ct);
+        var creditId = await _resolver.ResolveAccountIdAsync(rule.CreditRole, evt.BranchId, evt.PostingDate, ct);
+
+        var amount = _formula.Evaluate(rule.FormulaJson, evt.Metrics);
+        var lines = new[]
+        {
+            new JournalLineCreateDto(debitId, amount, 0m, rule.RuleKey),
+            new JournalLineCreateDto(creditId, 0m, amount, rule.RuleKey)
+        };
+
+        ValidateBalanced(lines);
+        var entryId = await _journalWriter.WriteAsync(evt, lines, rule.Version, ct);
+
+        await tx.CommitAsync(ct);
+        return entryId;
+    }
+    catch
+    {
+        await tx.RollbackAsync(ct);
+        throw;
+    }
+}`
+            },
+            migration: {
+                title: 'Chuyển hệ thống dễ dàng',
+                intro: 'Dữ liệu cũ vào compatibility layer, map sang event chuẩn, sau đó engine xử lý như nhau.',
+                code: `public async Task ReplayLegacyVoucherAsync(LegacyVoucher legacy, CancellationToken ct)
+{
+    var evt = _legacyAdapter.ToPostingEvent(legacy); // map field he cu -> event canon
+    await _postingEngine.PostAsync(evt, ct);
+}
+
+// File config de import
+// rules.v2.json
+// role-mapping.branch-cn01.v4.json
+// coa-template.v1.json`
+            },
+            sql: {
+                title: 'Schema tối thiểu',
+                intro: 'Bảng dữ liệu sử dụng business key, không phụ thuộc seed GUID cố định.',
+                code: `create table PostingRule (
+    RuleKey nvarchar(100) not null,
+    EventType nvarchar(100) not null,
+    ConditionJson nvarchar(max) not null,
+    DebitRole nvarchar(100) not null,
+    CreditRole nvarchar(100) not null,
+    FormulaJson nvarchar(max) not null,
+    Version int not null,
+    EffectiveFrom date not null,
+    EffectiveTo date null,
+    IsActive bit not null,
+    primary key (RuleKey, Version)
+);
+
+create table AccountRoleMapping (
+    ScopeType nvarchar(20) not null,
+    ScopeId nvarchar(50) not null,
+    RoleKey nvarchar(100) not null,
+    AccountId uniqueidentifier not null,
+    EffectiveFrom date not null,
+    EffectiveTo date null,
+    Priority int not null,
+    primary key (ScopeType, ScopeId, RoleKey, EffectiveFrom)
+);`
+            }
+        };
+
+        const playbook17 = [
+            { code: '3.1', group: 'master', name: 'Danh mục tài khoản', eventType: 'AccountCatalogChanged', mappings: [{ role: 'ROLE_ACCOUNT_PARENT_HEADER', account: 'header by code' }, { role: 'ROLE_ACCOUNT_CHILD_AUTO', account: 'auto child by parent code' }], note: 'Dùng role cho account model, không dùng GUID trong code tạo tài khoản con.' },
+            { code: '3.2', group: 'master', name: 'Mở sổ và khóa sổ', eventType: 'PeriodLockRequested', mappings: [{ role: 'ROLE_CONTROL_LOCK', account: 'control/no-posting' }], note: 'Không phát sinh journal; role dùng cho policy/permission gate.' },
+            { code: '3.3', group: 'report', name: 'Sổ nhật ký chung', eventType: 'JournalQueryRequested', mappings: [{ role: 'ROLE_VIEW_JOURNAL', account: 'query all account_id mapped to view' }], note: 'Truy vấn theo account_id, render code/name ở view layer.' },
+            { code: '3.4', group: 'report', name: 'Sổ chi tiết tài khoản', eventType: 'LedgerQueryRequested', mappings: [{ role: 'ROLE_LEDGER_TARGET', account: 'account selected by user' }], note: 'Tính opening/debit/credit/ending theo account_id được chọn.' },
+            { code: '3.5', group: 'report', name: 'Bảng cân đối kế toán', eventType: 'BalanceSheetRequested', mappings: [{ role: 'ROLE_BS_ASSET_GROUP', account: 'mapped by report node' }, { role: 'ROLE_BS_LIABILITY_GROUP', account: 'mapped by report node' }], note: 'Node map -> account roles, không map trực tiếp GUID trong report service.' },
+            { code: '3.6', group: 'control', name: 'Kết chuyển cuối kỳ', eventType: 'ClosingRunRequested', mappings: [{ role: 'ROLE_REV_511', account: '511' }, { role: 'ROLE_OTHER_REV_711', account: '711' }, { role: 'ROLE_COGS_632', account: '632' }, { role: 'ROLE_EXP_642', account: '642' }, { role: 'ROLE_TAX_EXP_821', account: '821' }, { role: 'ROLE_RESULT_911', account: '911' }, { role: 'ROLE_RETAINED_421', account: '421' }], note: 'Rule closing theo version, dễ đổi formula mà không sửa source code.' },
+            { code: '3.7', group: 'report', name: 'Công nợ khách hàng 131', eventType: 'ReceivableAgingRequested', mappings: [{ role: 'ROLE_AR_131', account: '131' }, { role: 'ROLE_CASH_111', account: '111' }, { role: 'ROLE_BANK_112', account: '112' }], note: 'Aging và statement resolve role AR theo branch/company.' },
+            { code: '3.8', group: 'report', name: 'Công nợ nhà cung cấp 331', eventType: 'PayableAgingRequested', mappings: [{ role: 'ROLE_AP_331', account: '331' }, { role: 'ROLE_CASH_111', account: '111' }, { role: 'ROLE_BANK_112', account: '112' }], note: 'AP flow giống AR, nhưng đảo chiều công nợ và due date.' },
+            { code: '3.9', group: 'control', name: 'Đối soát', eventType: 'ReconcileRequested', mappings: [{ role: 'ROLE_RECON_AR', account: '131' }, { role: 'ROLE_RECON_AP', account: '331' }, { role: 'ROLE_RECON_VAT_IN', account: '133' }, { role: 'ROLE_RECON_VAT_OUT', account: '3331' }], note: 'Issue tạo theo role-gap hoặc balance-gap.' },
+            { code: '3.10', group: 'posting', name: 'Hạch toán chứng từ thu', eventType: 'ReceiptPosted', mappings: [{ role: 'ROLE_RECEIPT_DEBIT_CASH_OR_BANK', account: '111/112' }, { role: 'ROLE_RECEIPT_CREDIT_AR_OR_REV_OR_CAPITAL', account: '131/511/411' }], note: 'Debit role và credit role xác định theo receipt type.' },
+            { code: '3.11', group: 'posting', name: 'Hạch toán chứng từ chi', eventType: 'PaymentPosted', mappings: [{ role: 'ROLE_PAYMENT_DEBIT_AP_OR_EXPENSE', account: '331/642' }, { role: 'ROLE_PAYMENT_CREDIT_CASH_OR_BANK', account: '111/112' }], note: 'Payment type quyết định debit role (trả nợ, chi phí, tạm ứng...).'},
+            { code: '3.12', group: 'posting', name: 'Hạch toán chứng từ nhập', eventType: 'InventoryImportPosted', mappings: [{ role: 'ROLE_INV_IN_156_OR_152', account: '156/152' }, { role: 'ROLE_VAT_INPUT_133', account: '133' }, { role: 'ROLE_AP_331', account: '331' }], note: 'Nhập kho có thể sinh 2-3 lines tùy VAT.' },
+            { code: '3.13', group: 'posting', name: 'Hạch toán chứng từ xuất', eventType: 'InventoryExportPosted', mappings: [{ role: 'ROLE_AR_131', account: '131' }, { role: 'ROLE_REV_511', account: '511' }, { role: 'ROLE_VAT_OUTPUT_3331', account: '3331' }, { role: 'ROLE_COGS_632', account: '632' }, { role: 'ROLE_INV_156_OR_152', account: '156/152' }], note: 'Một event xuất thường tạo 2 cặp bút toán: doanh thu và giá vốn.' },
+            { code: '3.14', group: 'posting', name: 'Hóa đơn mua vào', eventType: 'PurchaseInvoiceCreated', mappings: [{ role: 'ROLE_AP_331', account: '331' }, { role: 'ROLE_VAT_INPUT_133', account: '133' }, { role: 'ROLE_INV_IN_156_OR_152', account: '156/152' }], note: 'Invoice chỉ là source; posting có thể chạy ngay hoặc qua backlog.' },
+            { code: '3.15', group: 'posting', name: 'Hóa đơn bán ra', eventType: 'SalesInvoiceCreated', mappings: [{ role: 'ROLE_AR_131', account: '131' }, { role: 'ROLE_REV_511', account: '511' }, { role: 'ROLE_VAT_OUTPUT_3331', account: '3331' }], note: 'Payment status là derived state từ event thu tiền.' },
+            { code: '3.16', group: 'control', name: 'Danh sách chứng từ chưa hạch toán', eventType: 'BacklogPostingRequested', mappings: [{ role: 'ROLE_BACKLOG_DISPATCH', account: 'dynamic by voucher type' }], note: 'Backlog dispatch theo voucher type -> event type -> posting rule.' },
+            { code: '3.17', group: 'master', name: 'Cấu hình kỳ kế toán', eventType: 'AccountingConfigUpdated', mappings: [{ role: 'ROLE_CONFIG_DEFAULT_LOCK_DAY', account: 'policy role' }], note: 'Không post sổ; chỉ cập nhật behavior lock/closing/report theo config version.' }
+        ];
+
+        let activePlaybook17Code = null;
+
+        function normalizeText(value) {
+            return (value || '').toString().toLowerCase().trim();
+        }
+
+        function getFilteredPlaybook17() {
+            const group = document.getElementById('playbook-17-group')?.value || 'all';
+            const keyword = normalizeText(document.getElementById('playbook-17-search')?.value || '');
+
+            return playbook17.filter(item => {
+                const inGroup = group === 'all' || item.group === group;
+                if (!inGroup) return false;
+                if (!keyword) return true;
+
+                const roleText = item.mappings.map(m => `${m.role} ${m.account}`).join(' ');
+                const haystack = normalizeText(`${item.code} ${item.name} ${item.eventType} ${item.note} ${roleText}`);
+                return haystack.includes(keyword);
+            });
+        }
+
+        function getAudienceHints(item) {
+            const accountRefs = item.mappings.map(m => m.account).join(', ');
+
+            const devByGroup = {
+                master: 'Đây là nhóm cấu hình/danh mục. Dev nên ưu tiên validate, versioning và cache.',
+                report: 'Đây là nhóm truy vấn. Dev nên tránh mutate dữ liệu, tối ưu filter/pagination.',
+                posting: 'Đây là nhóm phát sinh bút toán. Dev phải đảm bảo transaction, idempotency, cân đối debit-credit.',
+                control: 'Đây là nhóm kiểm soát vận hành. Dev ưu tiên audit log, cảnh báo và chặn sai luồng.'
+            };
+
+            const accountingByGroup = {
+                master: 'Nhóm này giống phần "cài đặt gốc". Làm đúng từ đầu thì các phiếu sau mới chạy đúng.',
+                report: 'Nhóm này chủ yếu để xem và đối chiếu, thường không tạo bút toán mới.',
+                posting: 'Nhóm này là nơi bấm ghi nhận chứng từ. Cần kiểm tra ngày hạch toán và nội dung phiếu.',
+                control: 'Nhóm này giúp khóa sai lệch trước khi chốt kỳ, đặc biệt ở đối soát và kết chuyển.'
+            };
+
+            const practicalExamples = {
+                '3.10': 'Ví dụ: Thu tiền khách trả nợ. Hệ thống sẽ tự map role sang 111/112 và 131 rồi ghi sổ.',
+                '3.11': 'Ví dụ: Chi tiền trả nhà cung cấp. Hệ thống tự map role sang 331 và 111/112.',
+                '3.12': 'Ví dụ: Nhập kho có VAT. Hệ thống map 156/152, 133 và 331 theo rule.',
+                '3.13': 'Ví dụ: Xuất bán. Hệ thống tạo đồng thời bút toán doanh thu và giá vốn.',
+                '3.6': 'Ví dụ: Cuối tháng chạy kết chuyển. Hệ thống gom doanh thu/chi phí về 911 theo rule.'
+            };
+
+            return {
+                forDev: devByGroup[item.group] || 'Giữ service nghiệp vụ mỏng, tập trung đọc rule/mapping từ cấu hình.',
+                forAccounting: accountingByGroup[item.group] || 'Tập trung kiểm tra chứng từ đầu vào và kết quả báo cáo đầu ra.',
+                accountRefs,
+                plainExample: practicalExamples[item.code] || `Ví dụ: Chức năng ${item.code} dùng mapping ${accountRefs} để hệ thống tự xác định tài khoản, bạn không cần chọn GUID.`
+            };
+        }
+
+        function renderPlaybookTabs() {
+            const tabs = document.getElementById('playbook-tabs');
+            if (!tabs) return;
+            const keys = Object.keys(playbookBlocks);
+            tabs.innerHTML = keys.map((key, idx) => `
+                <button type="button" class="playbook-tab rounded-lg border px-3 py-2 text-sm ${idx === 0 ? 'border-teal-400 text-teal-300 bg-teal-500/10' : 'border-slate-700 text-slate-300 bg-slate-800/60 hover:bg-slate-700/60'}" data-key="${key}">
+                    ${playbookBlocks[key].title}
+                </button>
+            `).join('');
+
+            tabs.querySelectorAll('.playbook-tab').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    tabs.querySelectorAll('.playbook-tab').forEach(b => {
+                        b.className = 'playbook-tab rounded-lg border px-3 py-2 text-sm border-slate-700 text-slate-300 bg-slate-800/60 hover:bg-slate-700/60';
+                    });
+                    btn.className = 'playbook-tab rounded-lg border px-3 py-2 text-sm border-teal-400 text-teal-300 bg-teal-500/10';
+                    renderPlaybookContent(btn.dataset.key);
+                });
+            });
+
+            renderPlaybookContent(keys[0]);
+        }
+
+        function renderPlaybookContent(key) {
+            const content = document.getElementById('playbook-content');
+            if (!content || !playbookBlocks[key]) return;
+            const block = playbookBlocks[key];
+            content.innerHTML = `
+                <div class="rounded-lg border border-slate-700 bg-slate-800/40 p-4">
+                    <h4 class="text-base font-semibold text-teal-300">${block.title}</h4>
+                    <p class="text-sm text-slate-300 mt-2">${block.intro}</p>
+                </div>
+                <pre class="overflow-auto rounded bg-slate-950 p-4 text-xs text-slate-200 border border-slate-700"><code>${escapeHtml(block.code)}</code></pre>
+                <div class="rounded-lg border border-slate-700 bg-slate-900 p-4">
+                    <p class="text-xs uppercase tracking-wide text-teal-300 font-semibold mb-2">Ý nghĩa vận hành</p>
+                    <ul class="list-disc list-inside text-sm text-slate-300 space-y-1">
+                        <li>Service nghiệp vụ không cần biết GUID nào là 131 hay 511.</li>
+                        <li>Khi đổi hệ thống, chỉ cần đổi mapping/rule version, không đổi source code.</li>
+                        <li>Có thể dry-run và replay để đối chiếu trước khi go-live.</li>
+                    </ul>
+                </div>
+            `;
+        }
+
+        function renderPlaybook17Tabs() {
+            const tabs = document.getElementById('playbook-17-tabs');
+            if (!tabs) return;
+            const filtered = getFilteredPlaybook17();
+
+            if (filtered.length === 0) {
+                tabs.innerHTML = '';
+                renderPlaybook17Content(null);
+                return;
+            }
+
+            if (!activePlaybook17Code || !filtered.some(x => x.code === activePlaybook17Code)) {
+                activePlaybook17Code = filtered[0].code;
+            }
+
+            tabs.innerHTML = filtered.map(item => `
+                <button type="button" class="playbook-17-tab rounded-lg border px-3 py-2 text-xs ${item.code === activePlaybook17Code ? 'border-emerald-400 text-emerald-300 bg-emerald-500/10' : 'border-slate-700 text-slate-300 bg-slate-800/60 hover:bg-slate-700/60'}" data-code="${item.code}">
+                    ${item.code} - ${item.name}
+                </button>
+            `).join('');
+
+            tabs.querySelectorAll('.playbook-17-tab').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    activePlaybook17Code = btn.dataset.code;
+                    renderPlaybook17Tabs();
+                });
+            });
+
+            renderPlaybook17Content(activePlaybook17Code);
+        }
+
+        function buildFunctionPostingCode(item) {
+            const roleList = item.mappings.map(m => `"${m.role}"`).join(', ');
+            return `// ${item.code} - ${item.name}\npublic async Task<Guid> Post_${item.code.replace('.', '_')}(PostingEvent evt, CancellationToken ct)\n{\n    await using var tx = await _db.Database.BeginTransactionAsync(ct);\n    try\n    {\n        var roles = new[] { ${roleList} };\n        var resolved = await _resolver.ResolveManyAsync(roles, evt.BranchId, evt.PostingDate, ct);\n\n        var rule = await _ruleSelector.SelectAsync(evt, ct);\n        var lines = _lineBuilder.Build(evt, rule, resolved);\n        ValidateBalanced(lines);\n\n        var journalEntryId = await _journalWriter.WriteAsync(evt, lines, rule.Version, ct);\n        await tx.CommitAsync(ct);\n        return journalEntryId;\n    }\n    catch\n    {\n        await tx.RollbackAsync(ct);\n        throw;\n    }\n}`;
+        }
+
+        function renderPlaybook17Content(code) {
+            const content = document.getElementById('playbook-17-content');
+            if (!content) return;
+
+            if (!code) {
+                content.innerHTML = '<div class="rounded-lg border border-slate-700 bg-slate-800/50 p-4 text-sm text-slate-300">Không có chức năng nào khớp bộ lọc hiện tại.</div>';
+                return;
+            }
+
+            const item = playbook17.find(x => x.code === code);
+            if (!item) {
+                content.innerHTML = '';
+                return;
+            }
+            const hints = getAudienceHints(item);
+
+            const mappingRows = item.mappings.map(m => `
+                <tr class="border-b border-slate-800">
+                    <td class="px-3 py-2 text-emerald-300 font-semibold">${escapeHtml(m.role)}</td>
+                    <td class="px-3 py-2 text-slate-300">${escapeHtml(m.account)}</td>
+                </tr>
+            `).join('');
+
+            const mappingJson = JSON.stringify({
+                functionCode: item.code,
+                eventType: item.eventType,
+                roles: item.mappings
+            }, null, 2);
+
+            content.innerHTML = `
+                <div class="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
+                    <h4 class="text-base font-semibold text-emerald-300">${escapeHtml(item.code)} - ${escapeHtml(item.name)}</h4>
+                    <p class="text-sm text-slate-300 mt-2"><span class="text-emerald-300 font-semibold">EventType:</span> ${escapeHtml(item.eventType)}</p>
+                    <p class="text-sm text-slate-300 mt-1">${escapeHtml(item.note)}</p>
+                </div>
+
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                    <div class="rounded-lg border border-cyan-500/30 bg-cyan-500/5 p-4">
+                        <p class="text-xs uppercase tracking-wide text-cyan-300 font-semibold mb-2">Nếu bạn là Dev chưa biết kế toán</p>
+                        <p class="text-sm text-slate-200 mb-2">${escapeHtml(hints.forDev)}</p>
+                        <p class="text-xs text-slate-400">Các tài khoản đang dùng trong chức năng này: ${escapeHtml(hints.accountRefs)}</p>
+                    </div>
+                    <div class="rounded-lg border border-amber-500/30 bg-amber-500/5 p-4">
+                        <p class="text-xs uppercase tracking-wide text-amber-300 font-semibold mb-2">Nếu bạn là Kế toán mới</p>
+                        <p class="text-sm text-slate-200 mb-2">${escapeHtml(hints.forAccounting)}</p>
+                        <p class="text-xs text-slate-400">Ví dụ đời thường: ${escapeHtml(hints.plainExample)}</p>
+                    </div>
+                </div>
+
+                <div class="rounded-lg border border-slate-700 bg-slate-900 p-4 overflow-auto">
+                    <p class="text-xs uppercase tracking-wide text-emerald-300 font-semibold mb-2">Mapping role cụ thể</p>
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-700 text-slate-400">
+                                <th class="text-left px-3 py-2">RoleKey</th>
+                                <th class="text-left px-3 py-2">Account Canonical</th>
+                            </tr>
+                        </thead>
+                        <tbody>${mappingRows}</tbody>
+                    </table>
+                </div>
+
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-xs uppercase tracking-wide text-emerald-300 font-semibold mb-2">Code gợi ý C#</p>
+                        <pre class="overflow-auto rounded bg-slate-950 p-4 text-xs text-slate-200 border border-slate-700"><code>${escapeHtml(buildFunctionPostingCode(item))}</code></pre>
+                    </div>
+                    <div>
+                        <p class="text-xs uppercase tracking-wide text-emerald-300 font-semibold mb-2">Config JSON gợi ý</p>
+                        <pre class="overflow-auto rounded bg-slate-950 p-4 text-xs text-slate-200 border border-slate-700"><code>${escapeHtml(mappingJson)}</code></pre>
+                    </div>
+                </div>
+            `;
+        }
+
+        function escapeHtml(value) {
+            return (value || '')
+                .toString()
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        const receiptCategories = [
+            { key: 'customer_payment', label: 'Thu nợ khách hàng', debitRole: 'ROLE_CASH_111_OR_BANK_112', creditRole: 'ROLE_AR_131', note: 'Thu tiền về để giảm công nợ phải thu.' },
+            { key: 'sales_cash', label: 'Thu bán hàng tiền ngay', debitRole: 'ROLE_CASH_111_OR_BANK_112', creditRole: 'ROLE_REV_511', note: 'Tiền vào ngay và ghi nhận doanh thu.' },
+            { key: 'owner_capital', label: 'Chủ góp vốn thêm', debitRole: 'ROLE_CASH_111_OR_BANK_112', creditRole: 'ROLE_CAPITAL_411', note: 'Tăng tiền và tăng vốn chủ sở hữu.' }
+        ];
+
+        const paymentCategories = [
+            { key: 'pay_supplier', label: 'Trả nợ nhà cung cấp', debitRole: 'ROLE_AP_331', creditRole: 'ROLE_CASH_111_OR_BANK_112', note: 'Giảm công nợ phải trả bằng tiền.' },
+            { key: 'office_expense', label: 'Chi phí quản lý', debitRole: 'ROLE_EXP_642', creditRole: 'ROLE_CASH_111_OR_BANK_112', note: 'Ghi nhận chi phí vận hành.' },
+            { key: 'advance_employee', label: 'Tạm ứng nhân viên', debitRole: 'ROLE_ADVANCE_141', creditRole: 'ROLE_CASH_111_OR_BANK_112', note: 'Tăng khoản tạm ứng và giảm tiền.' }
+        ];
+
+        const roleToCanonicalAccount = {
+            ROLE_CASH_111_OR_BANK_112: '111/112',
+            ROLE_AR_131: '131',
+            ROLE_REV_511: '511',
+            ROLE_CAPITAL_411: '411',
+            ROLE_AP_331: '331',
+            ROLE_EXP_642: '642',
+            ROLE_ADVANCE_141: '141'
+        };
+
+        const demoPostingRules = {
+            receipt: {
+                customer_payment: { ruleKey: 'RCP-AR-01', debitRole: 'ROLE_CASH_111_OR_BANK_112', creditRole: 'ROLE_AR_131', isActive: true },
+                sales_cash: { ruleKey: 'RCP-REV-01', debitRole: 'ROLE_CASH_111_OR_BANK_112', creditRole: 'ROLE_REV_511', isActive: true },
+                owner_capital: { ruleKey: 'RCP-CAP-01', debitRole: 'ROLE_CASH_111_OR_BANK_112', creditRole: 'ROLE_CAPITAL_411', isActive: true }
+            },
+            payment: {
+                pay_supplier: { ruleKey: 'PAY-AP-01', debitRole: 'ROLE_AP_331', creditRole: 'ROLE_CASH_111_OR_BANK_112', isActive: true },
+                office_expense: { ruleKey: 'PAY-EXP-01', debitRole: 'ROLE_EXP_642', creditRole: 'ROLE_CASH_111_OR_BANK_112', isActive: true },
+                advance_employee: { ruleKey: 'PAY-ADV-01', debitRole: 'ROLE_ADVANCE_141', creditRole: 'ROLE_CASH_111_OR_BANK_112', isActive: true }
+            }
+        };
+
+        const demoBranchRoleMapping = {
+            CN01: {
+                ROLE_CASH_111_OR_BANK_112: 'id_111',
+                ROLE_AR_131: 'id_131',
+                ROLE_REV_511: 'id_511',
+                ROLE_CAPITAL_411: 'id_411',
+                ROLE_AP_331: 'id_331',
+                ROLE_EXP_642: 'id_642',
+                ROLE_ADVANCE_141: 'id_141'
+            },
+            CN02: {
+                ROLE_CASH_111_OR_BANK_112: 'id_112',
+                ROLE_AR_131: 'id_131',
+                ROLE_REV_511: 'id_511',
+                ROLE_CAPITAL_411: 'id_411',
+                ROLE_AP_331: 'id_331',
+                ROLE_EXP_642: 'id_642'
+            }
+        };
+
+        const demoCompanyRoleMapping = {
+            ROLE_ADVANCE_141: 'id_141',
+            ROLE_CASH_111_OR_BANK_112: 'id_111',
+            ROLE_AR_131: 'id_131',
+            ROLE_AP_331: 'id_331',
+            ROLE_REV_511: 'id_511',
+            ROLE_EXP_642: 'id_642',
+            ROLE_CAPITAL_411: 'id_411'
+        };
+
+        function getDemoCategoryList(voucherType) {
+            return voucherType === 'payment' ? paymentCategories : receiptCategories;
+        }
+
+        function renderDemoCategoryOptions() {
+            const voucherType = document.getElementById('demo-voucher-type')?.value || 'receipt';
+            const categories = getDemoCategoryList(voucherType);
+            const categorySelect = document.getElementById('demo-category');
+            if (!categorySelect) return;
+
+            categorySelect.innerHTML = categories.map(x => `<option value="${x.key}">${x.label}</option>`).join('');
+            renderDemoAutoAccounts();
+        }
+
+        function getSelectedDemoCategory() {
+            const voucherType = document.getElementById('demo-voucher-type')?.value || 'receipt';
+            const categoryKey = document.getElementById('demo-category')?.value || '';
+            const categories = getDemoCategoryList(voucherType);
+            return categories.find(x => x.key === categoryKey) || categories[0];
+        }
+
+        function renderDemoAutoAccounts() {
+            const selected = getSelectedDemoCategory();
+            const amount = Number(document.getElementById('demo-amount')?.value || 0);
+            if (!selected) return;
+
+            const debitAcc = roleToCanonicalAccount[selected.debitRole] || 'N/A';
+            const creditAcc = roleToCanonicalAccount[selected.creditRole] || 'N/A';
+
+            const preview = document.getElementById('demo-account-preview');
+            if (preview) {
+                preview.innerHTML = `
+                    <li><span class="text-slate-400">Khoản chọn:</span> <span class="text-sky-300 font-semibold">${selected.label}</span></li>
+                    <li><span class="text-slate-400">Debit Role:</span> <span class="font-mono">${selected.debitRole}</span> -> <span class="text-emerald-300">TK ${debitAcc}</span></li>
+                    <li><span class="text-slate-400">Credit Role:</span> <span class="font-mono">${selected.creditRole}</span> -> <span class="text-emerald-300">TK ${creditAcc}</span></li>
+                    <li><span class="text-slate-400">Giải thích:</span> ${selected.note}</li>
+                `;
+            }
+
+            const journalCode = document.getElementById('demo-journal-lines');
+            if (journalCode) {
+                const lines = [
+                    { side: 'Debit', account: debitAcc, amount },
+                    { side: 'Credit', account: creditAcc, amount }
+                ];
+                journalCode.textContent = JSON.stringify(lines, null, 2);
+            }
+
+            const csharpCode = document.getElementById('demo-csharp-code');
+            if (csharpCode) {
+                csharpCode.textContent = `// ===========================
+// 1) DTO + Entity
+// ===========================
+public sealed record VoucherPostingInput(
+    string VoucherType,
+    string CategoryKey,
+    string BranchId,
+    DateTime PostingDate,
+    decimal Amount,
+    string SourceVoucherId,
+    string CreatedBy
+);
+
+public sealed record JournalLineCreateDto(
+    Guid AccountId,
+    decimal Debit,
+    decimal Credit,
+    string Description
+);
+
+public sealed class PostingRule
+{
+    public string RuleKey { get; init; } = string.Empty;
+    public string VoucherType { get; init; } = string.Empty;
+    public string CategoryKey { get; init; } = string.Empty;
+    public string DebitRole { get; init; } = string.Empty;
+    public string CreditRole { get; init; } = string.Empty;
+    public bool IsActive { get; init; }
+    public int Priority { get; init; }
+    public DateTime EffectiveFrom { get; init; }
+    public DateTime? EffectiveTo { get; init; }
+}
+
+public sealed class AccountRoleMapping
+{
+    public string ScopeType { get; init; } = string.Empty; // branch | company | global
+    public string ScopeId { get; init; } = string.Empty;
+    public string RoleKey { get; init; } = string.Empty;
+    public Guid AccountId { get; init; }
+    public DateTime EffectiveFrom { get; init; }
+    public DateTime? EffectiveTo { get; init; }
+}
+
+// ===========================
+// 2) Repository contract
+// ===========================
+public interface IPostingRuleRepository
+{
+    Task<PostingRule?> GetByVoucherTypeAndCategoryAsync(
+        string voucherType,
+        string categoryKey,
+        DateTime postingDate,
+        CancellationToken ct);
+}
+
+public interface IAccountRoleMappingRepository
+{
+    Task<AccountRoleMapping?> FindMappingAsync(
+        string scopeType,
+        string scopeId,
+        string roleKey,
+        DateTime postingDate,
+        CancellationToken ct);
+}
+
+public interface IJournalWriter
+{
+    Task<Guid> WriteAsync(VoucherPostingInput input, IReadOnlyList<JournalLineCreateDto> lines, string ruleKey, CancellationToken ct);
+    Task<bool> ExistsBySourceVoucherIdAsync(string sourceVoucherId, CancellationToken ct);
+}
+
+// ===========================
+// 3) Resolver + function con
+// ===========================
+public sealed class AccountResolver
+{
+    private readonly IAccountRoleMappingRepository _mappingRepo;
+    private readonly string _companyId;
+
+    public AccountResolver(IAccountRoleMappingRepository mappingRepo, string companyId)
+    {
+        _mappingRepo = mappingRepo;
+        _companyId = companyId;
+    }
+
+    public async Task<Guid> ResolveAccountIdAsync(string roleKey, string branchId, DateTime postingDate, CancellationToken ct)
+    {
+        var byBranch = await _mappingRepo.FindMappingAsync("branch", branchId, roleKey, postingDate, ct);
+        if (byBranch is not null) return byBranch.AccountId;
+
+        var byCompany = await _mappingRepo.FindMappingAsync("company", _companyId, roleKey, postingDate, ct);
+        if (byCompany is not null) return byCompany.AccountId;
+
+        var byGlobal = await _mappingRepo.FindMappingAsync("global", "default", roleKey, postingDate, ct);
+        if (byGlobal is not null) return byGlobal.AccountId;
+
+        throw new InvalidOperationException("MISSING_ROLE_MAPPING: " + roleKey + " @ " + branchId);
+    }
+}
+
+// ===========================
+// 4) Service chính + đầy đủ function con
+// ===========================
+public sealed class VoucherPostingService
+{
+    private readonly AppDbContext _db;
+    private readonly IPostingRuleRepository _ruleRepo;
+    private readonly AccountResolver _resolver;
+    private readonly IJournalWriter _journalWriter;
+
+    public VoucherPostingService(AppDbContext db, IPostingRuleRepository ruleRepo, AccountResolver resolver, IJournalWriter journalWriter)
+    {
+        _db = db;
+        _ruleRepo = ruleRepo;
+        _resolver = resolver;
+        _journalWriter = journalWriter;
+    }
+
+    public async Task<Guid> PostVoucherAsync(VoucherPostingInput input, CancellationToken ct)
+    {
+        ValidateInput(input);
+        await EnsureNotPostedAsync(input.SourceVoucherId, ct);
+
+        return await ExecuteInTransactionAsync(async () =>
+        {
+            var rule = await GetRuleRequiredAsync(input, ct);
+            var lines = await BuildLinesAsync(input, rule, ct);
+            ValidateBalanced(lines);
+
+            return await _journalWriter.WriteAsync(input, lines, rule.RuleKey, ct);
+        }, ct);
+    }
+
+    private static void ValidateInput(VoucherPostingInput input)
+    {
+        if (string.IsNullOrWhiteSpace(input.VoucherType)) throw new InvalidOperationException("VOUCHER_TYPE_REQUIRED");
+        if (string.IsNullOrWhiteSpace(input.CategoryKey)) throw new InvalidOperationException("CATEGORY_KEY_REQUIRED");
+        if (string.IsNullOrWhiteSpace(input.BranchId)) throw new InvalidOperationException("BRANCH_REQUIRED");
+        if (input.Amount <= 0) throw new InvalidOperationException("AMOUNT_MUST_BE_POSITIVE");
+    }
+
+    private async Task EnsureNotPostedAsync(string sourceVoucherId, CancellationToken ct)
+    {
+        var exists = await _journalWriter.ExistsBySourceVoucherIdAsync(sourceVoucherId, ct);
+        if (exists) throw new InvalidOperationException("ALREADY_POSTED");
+    }
+
+    private async Task<PostingRule> GetRuleRequiredAsync(VoucherPostingInput input, CancellationToken ct)
+    {
+        var rule = await _ruleRepo.GetByVoucherTypeAndCategoryAsync(input.VoucherType, input.CategoryKey, input.PostingDate, ct);
+        if (rule is null || !rule.IsActive) throw new InvalidOperationException("RULE_NOT_FOUND_OR_INACTIVE");
+        return rule;
+    }
+
+    private async Task<IReadOnlyList<JournalLineCreateDto>> BuildLinesAsync(VoucherPostingInput input, PostingRule rule, CancellationToken ct)
+    {
+        var debitId = await _resolver.ResolveAccountIdAsync(rule.DebitRole, input.BranchId, input.PostingDate, ct);
+        var creditId = await _resolver.ResolveAccountIdAsync(rule.CreditRole, input.BranchId, input.PostingDate, ct);
+
+        return new[]
+        {
+            new JournalLineCreateDto(debitId, input.Amount, 0m, rule.RuleKey + "-DEBIT"),
+            new JournalLineCreateDto(creditId, 0m, input.Amount, rule.RuleKey + "-CREDIT")
+        };
+    }
+
+    private static void ValidateBalanced(IReadOnlyList<JournalLineCreateDto> lines)
+    {
+        var totalDebit = lines.Sum(x => x.Debit);
+        var totalCredit = lines.Sum(x => x.Credit);
+        if (totalDebit != totalCredit)
+            throw new InvalidOperationException("JOURNAL_NOT_BALANCED");
+    }
+
+    private async Task<T> ExecuteInTransactionAsync<T>(Func<Task<T>> action, CancellationToken ct)
+    {
+        await using var tx = await _db.Database.BeginTransactionAsync(ct);
+        try
+        {
+            var result = await action();
+            await tx.CommitAsync(ct);
+            return result;
+        }
+        catch
+        {
+            await tx.RollbackAsync(ct);
+            throw;
+        }
+    }
+}
+
+// ===========================
+// 5) Mẫu implementation repository rule
+// ===========================
+public sealed class PostingRuleRepository : IPostingRuleRepository
+{
+    private readonly AppDbContext _db;
+    public PostingRuleRepository(AppDbContext db) { _db = db; }
+
+    public async Task<PostingRule?> GetByVoucherTypeAndCategoryAsync(string voucherType, string categoryKey, DateTime postingDate, CancellationToken ct)
+    {
+        return await _db.PostingRules
+            .Where(x =>
+                x.IsActive &&
+                x.VoucherType == voucherType &&
+                x.CategoryKey == categoryKey &&
+                x.EffectiveFrom <= postingDate &&
+                (x.EffectiveTo == null || x.EffectiveTo >= postingDate))
+            .OrderByDescending(x => x.Priority)
+            .ThenByDescending(x => x.EffectiveFrom)
+            .FirstOrDefaultAsync(ct);
+    }
+}`;
+            }
+
+            const resolverDimensionCode = document.getElementById('demo-resolver-dimension-code');
+            if (resolverDimensionCode) {
+                resolverDimensionCode.textContent = `// Input context từ chứng từ
+public sealed record ResolveContext(
+    string BranchId,
+    DateTime PostingDate,
+    string? PaymentMethod,   // cash | bank
+    string? BankAccountId,
+    string? CashBoxId,
+    string Currency
+);
+
+public async Task<Guid> ResolveAccountByRoleWithDimensionAsync(
+    string roleKey,
+    ResolveContext ctx,
+    CancellationToken ct)
+{
+    // 1) Mở rộng role theo payment method
+    var expandedRoles = ExpandRoleByPaymentMethod(roleKey, ctx.PaymentMethod);
+
+    // 2) Danh sách ưu tiên dimension (cụ thể -> tổng quát)
+    var priorities = BuildPriorityDimensions(ctx);
+
+    // 3) Duyệt role và dimension theo thứ tự ưu tiên
+    foreach (var candidateRole in expandedRoles)
+    {
+        foreach (var p in priorities)
+        {
+            var hit = await _mappingRepo.FindByDimensionAsync(
+                scopeType: p.ScopeType,
+                scopeId: p.ScopeId,
+                roleKey: candidateRole,
+                postingDate: ctx.PostingDate,
+                paymentMethod: p.PaymentMethod,
+                bankAccountId: p.BankAccountId,
+                cashBoxId: p.CashBoxId,
+                ct: ct);
+
+            if (hit is not null)
+                return hit.AccountId;
+        }
+    }
+
+    throw new InvalidOperationException($"MISSING_ROLE_MAPPING:{roleKey}:{ctx.BranchId}");
+}
+
+private static IReadOnlyList<string> ExpandRoleByPaymentMethod(string roleKey, string? paymentMethod)
+{
+    if (roleKey == "ROLE_CASH_111_OR_BANK_112")
+    {
+        if (paymentMethod == "bank")
+            return new[] { "ROLE_BANK_112", "ROLE_CASH_111_OR_BANK_112" };
+        if (paymentMethod == "cash")
+            return new[] { "ROLE_CASH_111", "ROLE_CASH_111_OR_BANK_112" };
+    }
+
+    return new[] { roleKey };
+}
+
+private static IReadOnlyList<(string ScopeType, string ScopeId, string? PaymentMethod, string? BankAccountId, string? CashBoxId)> BuildPriorityDimensions(ResolveContext ctx)
+{
+    return new[]
+    {
+        ("branch", ctx.BranchId, ctx.PaymentMethod, ctx.BankAccountId, ctx.CashBoxId),
+        ("branch", ctx.BranchId, ctx.PaymentMethod, ctx.BankAccountId, null),
+        ("branch", ctx.BranchId, ctx.PaymentMethod, null, ctx.CashBoxId),
+        ("branch", ctx.BranchId, ctx.PaymentMethod, null, null),
+        ("branch", ctx.BranchId, null, null, null),
+        ("company", "company", ctx.PaymentMethod, null, null),
+        ("company", "company", null, null, null),
+        ("global", "default", null, null, null)
+    };
+}
+
+// Gợi ý nghiệp vụ:
+// paymentMethod=bank + bankAccountId=VCB_CN01 -> ưu tiên 1121
+// paymentMethod=cash + cashBoxId=MAIN_SAFE -> ưu tiên 1111
+// không có mapping chi tiết -> fallback 112/111 mặc định theo scope`;
+            }
+        }
+
+        function getDemoRule(voucherType, categoryKey) {
+            return demoPostingRules[voucherType]?.[categoryKey] || null;
+        }
+
+        function resolveDemoAccountId(roleKey, branchId) {
+            const branchHit = demoBranchRoleMapping[branchId]?.[roleKey];
+            if (branchHit) {
+                return { accountId: branchHit, source: 'branch' };
+            }
+            const companyHit = demoCompanyRoleMapping[roleKey];
+            if (companyHit) {
+                return { accountId: companyHit, source: 'company' };
+            }
+            return null;
+        }
+
+        function createStepResult(step, passed, detail) {
+            return { step, passed, detail };
+        }
+
+        function runFlowChecklist() {
+            const voucherType = document.getElementById('demo-voucher-type')?.value || '';
+            const categoryKey = document.getElementById('demo-category')?.value || '';
+            const branchId = document.getElementById('demo-branch')?.value || '';
+            const postingDate = document.getElementById('demo-posting-date')?.value || '';
+            const amount = Number(document.getElementById('demo-amount')?.value || 0);
+
+            const steps = [];
+
+            const step1 = Boolean(voucherType);
+            steps.push(createStepResult('Bước 1 - Xác định loại Thu/Chi', step1, step1 ? `Đã chọn: ${voucherType}` : 'Chưa chọn loại chứng từ.'));
+
+            const step2 = Boolean(categoryKey);
+            steps.push(createStepResult('Bước 2 - Xác định khoản nghiệp vụ', step2, step2 ? `Đã chọn key: ${categoryKey}` : 'Chưa chọn khoản nghiệp vụ.'));
+
+            const rule = step1 && step2 ? getDemoRule(voucherType, categoryKey) : null;
+            const step3 = Boolean(rule && rule.isActive);
+            steps.push(createStepResult('Bước 3 - Truy vấn rule theo loại + key', step3, step3 ? `Rule: ${rule.ruleKey}` : 'Không tìm thấy rule active cho tổ hợp đã chọn.'));
+
+            const step4 = Boolean(step3 && rule.debitRole && rule.creditRole);
+            steps.push(createStepResult('Bước 4 - Lấy DebitRole/CreditRole', step4, step4 ? `${rule.debitRole} | ${rule.creditRole}` : 'Rule thiếu role định khoản.'));
+
+            const debitResolved = step4 ? resolveDemoAccountId(rule.debitRole, branchId) : null;
+            const step5 = Boolean(debitResolved);
+            steps.push(createStepResult('Bước 5 - Mapping DebitRole -> AccountId', step5, step5 ? `${rule.debitRole} -> ${debitResolved.accountId} (${debitResolved.source})` : 'Không resolve được debit role.'));
+
+            const creditResolved = step4 ? resolveDemoAccountId(rule.creditRole, branchId) : null;
+            const step6 = Boolean(creditResolved);
+            steps.push(createStepResult('Bước 6 - Mapping CreditRole -> AccountId', step6, step6 ? `${rule.creditRole} -> ${creditResolved.accountId} (${creditResolved.source})` : 'Không resolve được credit role.'));
+
+            const step7 = Boolean(branchId && postingDate && amount > 0);
+            steps.push(createStepResult('Bước 7 - Validate dữ liệu đầu vào', step7, step7 ? `Branch=${branchId}, Date=${postingDate}, Amount=${amount.toLocaleString('vi-VN')}` : 'Thiếu chi nhánh/ngày hạch toán hoặc số tiền <= 0.'));
+
+            const lines = step5 && step6 && step7
+                ? [
+                    { debit: debitResolved.accountId, credit: null, amount },
+                    { debit: null, credit: creditResolved.accountId, amount }
+                ]
+                : [];
+            const step8 = lines.length === 2;
+            steps.push(createStepResult('Bước 8 - Sinh bút toán', step8, step8 ? `Sinh ${lines.length} dòng định khoản.` : 'Không sinh được dòng bút toán.'));
+
+            const totalDebit = lines.reduce((sum, x) => sum + (x.debit ? x.amount : 0), 0);
+            const totalCredit = lines.reduce((sum, x) => sum + (x.credit ? x.amount : 0), 0);
+            const step9 = step8 && totalDebit === totalCredit;
+            steps.push(createStepResult('Bước 9 - Kiểm tra cân bút toán', step9, step9 ? `Debit=${totalDebit.toLocaleString('vi-VN')} = Credit=${totalCredit.toLocaleString('vi-VN')}` : 'Lệch cân bút toán.'));
+
+            const step10 = step9;
+            steps.push(createStepResult('Bước 10 - Ghi sổ trong transaction', step10, step10 ? 'Sẵn sàng BeginTransaction -> Commit.' : 'Chưa đủ điều kiện để ghi sổ.'));
+
+            const step11 = step10;
+            steps.push(createStepResult('Bước 11 - Lưu trace/audit', step11, step11 ? `Trace: voucherType=${voucherType}, categoryKey=${categoryKey}, rule=${rule?.ruleKey || 'N/A'}` : 'Chưa thể lưu trace vì chưa ghi sổ.'));
+
+            renderFlowChecklistResult(steps);
+        }
+
+        function renderFlowChecklistResult(steps) {
+            const container = document.getElementById('flow-checklist-steps');
+            const summary = document.getElementById('flow-checklist-summary');
+            if (!container || !summary) return;
+
+            const passCount = steps.filter(x => x.passed).length;
+            const failCount = steps.length - passCount;
+
+            container.innerHTML = steps.map(item => `
+                <div class="rounded-lg border ${item.passed ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-rose-500/40 bg-rose-500/5'} p-3">
+                    <div class="flex items-center justify-between gap-3">
+                        <p class="text-sm font-semibold ${item.passed ? 'text-emerald-300' : 'text-rose-300'}">${item.step}</p>
+                        <span class="text-xs font-bold px-2 py-1 rounded ${item.passed ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}">${item.passed ? 'PASS' : 'FAIL'}</span>
+                    </div>
+                    <p class="text-xs text-slate-300 mt-1">${escapeHtml(item.detail)}</p>
+                </div>
+            `).join('');
+
+            summary.innerHTML = `Kết quả: <span class="text-emerald-300 font-semibold">${passCount} PASS</span> / <span class="text-rose-300 font-semibold">${failCount} FAIL</span>.`;
+        }
+
+        window.addEventListener('load', () => {
+            renderPlaybookTabs();
+            document.getElementById('playbook-17-group')?.addEventListener('change', renderPlaybook17Tabs);
+            document.getElementById('playbook-17-search')?.addEventListener('input', renderPlaybook17Tabs);
+            renderPlaybook17Tabs();
+
+            document.getElementById('demo-voucher-type')?.addEventListener('change', renderDemoCategoryOptions);
+            document.getElementById('demo-category')?.addEventListener('change', renderDemoAutoAccounts);
+            document.getElementById('demo-amount')?.addEventListener('input', renderDemoAutoAccounts);
+            document.getElementById('demo-branch')?.addEventListener('change', () => { renderDemoAutoAccounts(); runFlowChecklist(); });
+            document.getElementById('demo-posting-date')?.addEventListener('change', runFlowChecklist);
+            document.getElementById('run-flow-checklist')?.addEventListener('click', runFlowChecklist);
+
+            const postingDateInput = document.getElementById('demo-posting-date');
+            if (postingDateInput && !postingDateInput.value) {
+                postingDateInput.value = new Date().toISOString().slice(0, 10);
+            }
+
+            renderDemoCategoryOptions();
+            runFlowChecklist();
+        });
+    </script>
+</body>
+</html>
