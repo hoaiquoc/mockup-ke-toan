@@ -48,6 +48,8 @@
                                     <option value="payment:office_expense">Phiếu Chi - Chi phí quản lý</option>
                                     <option value="payment:advance_employee">Phiếu Chi - Tạm ứng nhân viên</option>
                                     <option value="receipt:customer_payment">Phiếu Thu - Thu nợ khách hàng</option>
+                                    <option value="import:purchase_inventory">Nhập hàng - Mua hàng nhập kho</option>
+                                    <option value="export:sale_inventory">Xuất hàng - Bán hàng xuất kho</option>
                                 </select>
                             </div>
                             <div>
@@ -97,6 +99,8 @@
                             <option value="payment:office_expense">Phiếu Chi - Chi phí quản lý</option>
                             <option value="payment:advance_employee">Phiếu Chi - Tạm ứng nhân viên</option>
                             <option value="receipt:customer_payment">Phiếu Thu - Thu nợ khách hàng</option>
+                            <option value="import:purchase_inventory">Nhập hàng - Mua hàng nhập kho (N156/N1331/C331)</option>
+                            <option value="export:sale_inventory">Xuất hàng - Bán hàng xuất kho (N131/C511/C3331 + N632/C156)</option>
                         </select>
                         <button id="apply-rule-template" class="rounded-lg border border-sky-500/50 bg-sky-500/10 px-3 py-2 text-sm font-semibold text-sky-300 hover:bg-sky-500/20">Áp mẫu</button>
                     </div>
@@ -104,6 +108,8 @@
                         <select id="rule-voucher-type" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm">
                             <option value="receipt">Phiếu Thu</option>
                             <option value="payment" selected>Phiếu Chi</option>
+                            <option value="import">Nhập kho</option>
+                            <option value="export">Xuất kho</option>
                         </select>
                         <input id="rule-category-key" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm" placeholder="Key loại (vd: pay_supplier)">
                         <input id="rule-category-name" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm" placeholder="Tên loại (vd: Trả nợ NCC)">
@@ -116,6 +122,47 @@
                         <input id="rule-effective-from" type="date" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm">
                         <input id="rule-priority" type="number" value="10" min="1" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm">
                     </div>
+                    <div class="rounded-lg border border-slate-700 bg-slate-900/60 p-3 mb-4">
+                        <p class="text-xs uppercase tracking-wide text-sky-300 font-semibold mb-2">Line-level định khoản cho 1 chứng từ</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-3 mb-3">
+                            <select id="rule-pair-debit-role" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm"></select>
+                            <select id="rule-pair-debit-formula" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm">
+                                <option value="amount">amount</option>
+                                <option value="vat">vat</option>
+                                <option value="cost">cost</option>
+                                <option value="fee">fee</option>
+                                <option value="amount_minus_fee">amount_minus_fee</option>
+                                <option value="amount_plus_vat">amount_plus_vat</option>
+                            </select>
+                            <select id="rule-pair-credit-role" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm"></select>
+                            <select id="rule-pair-credit-formula" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm">
+                                <option value="amount">amount</option>
+                                <option value="vat">vat</option>
+                                <option value="cost">cost</option>
+                                <option value="fee">fee</option>
+                                <option value="amount_minus_fee">amount_minus_fee</option>
+                                <option value="amount_plus_vat">amount_plus_vat</option>
+                            </select>
+                            <input id="rule-pair-dimension" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm" placeholder="DimensionFilter (optional)">
+                            <button id="add-rule-pair" class="rounded-lg border border-sky-500/50 bg-sky-500/10 px-3 py-2 text-sm font-semibold text-sky-300 hover:bg-sky-500/20">Thêm cặp định khoản</button>
+                        </div>
+                        <div class="overflow-auto rounded-lg border border-slate-700">
+                            <table class="w-full text-sm">
+                                <thead class="bg-slate-800/70 text-slate-300">
+                                    <tr>
+                                        <th class="text-left px-3 py-2">Cặp</th>
+                                        <th class="text-left px-3 py-2">Nợ Role</th>
+                                        <th class="text-left px-3 py-2">Nợ Formula</th>
+                                        <th class="text-left px-3 py-2">Có Role</th>
+                                        <th class="text-left px-3 py-2">Có Formula</th>
+                                        <th class="text-left px-3 py-2">DimensionFilter</th>
+                                        <th class="text-left px-3 py-2">Xóa</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="rule-line-table" class="text-slate-200"></tbody>
+                            </table>
+                        </div>
+                    </div>
                     <button id="add-rule" class="rounded-lg border border-sky-500/50 bg-sky-500/10 px-4 py-2 text-sm font-semibold text-sky-300 hover:bg-sky-500/20">Thêm/ghi đè rule</button>
                     <div class="mt-4 overflow-auto rounded-lg border border-slate-700">
                         <table class="w-full text-sm">
@@ -125,6 +172,7 @@
                                     <th class="text-left px-3 py-2">Category</th>
                                     <th class="text-left px-3 py-2">DebitRole</th>
                                     <th class="text-left px-3 py-2">CreditRole</th>
+                                    <th class="text-left px-3 py-2">Số cặp</th>
                                     <th class="text-left px-3 py-2">Ngày hiệu lực</th>
                                     <th class="text-left px-3 py-2">Priority</th>
                                     <th class="text-left px-3 py-2">Trạng thái</th>
@@ -171,12 +219,14 @@
                 </section>
 
                 <section class="technical-section glassmorphism rounded-xl p-6 border border-violet-500/30 mb-6">
-                    <h3 class="text-lg font-semibold text-violet-300 mb-3">3) Runtime: Phiếu Chi -> Loại Chi -> Tự lấy tài khoản</h3>
+                    <h3 class="text-lg font-semibold text-violet-300 mb-3">3) Runtime: Chứng từ -> Loại nghiệp vụ -> Tự lấy tài khoản</h3>
                     <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
                         <div class="space-y-3 rounded-lg border border-slate-700 bg-slate-900/70 p-4">
                             <select id="run-voucher-type" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm">
                                 <option value="payment" selected>Phiếu Chi</option>
                                 <option value="receipt">Phiếu Thu</option>
+                                <option value="import">Nhập kho</option>
+                                <option value="export">Xuất kho</option>
                             </select>
                             <select id="run-category" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm"></select>
                             <select id="run-branch" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm">
@@ -185,6 +235,9 @@
                             </select>
                             <input id="run-posting-date" type="date" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm">
                             <input id="run-amount" type="number" min="0" step="1000" value="1000000" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm">
+                            <input id="run-vat" type="number" min="0" step="1000" value="100000" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm" placeholder="VAT">
+                            <input id="run-cost" type="number" min="0" step="1000" value="700000" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm" placeholder="Cost/Giá vốn">
+                            <input id="run-fee" type="number" min="0" step="1000" value="0" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm" placeholder="Fee/Chi phí khác">
                             <button id="run-simulate" class="rounded-lg border border-violet-500/50 bg-violet-500/10 px-4 py-2 text-sm font-semibold text-violet-300 hover:bg-violet-500/20">Chạy mô phỏng</button>
                         </div>
                         <div class="space-y-3">
@@ -195,6 +248,26 @@
                             <div class="rounded-lg border border-slate-700 bg-slate-900 p-4">
                                 <p class="text-xs uppercase tracking-wide text-violet-300 font-semibold mb-2">Payload trả về cho API</p>
                                 <pre id="run-payload" class="overflow-auto rounded bg-slate-950 p-3 text-xs text-slate-200 border border-slate-700"></pre>
+                            </div>
+                            <div class="rounded-lg border border-slate-700 bg-slate-900 p-4">
+                                <p class="text-xs uppercase tracking-wide text-violet-300 font-semibold mb-2">Journal lines mô phỏng (line-level)</p>
+                                <div class="overflow-auto rounded border border-slate-700">
+                                    <table class="w-full text-xs">
+                                        <thead class="bg-slate-800/70 text-slate-300">
+                                            <tr>
+                                                <th class="text-left px-2 py-2">LineNo</th>
+                                                <th class="text-left px-2 py-2">Role</th>
+                                                <th class="text-left px-2 py-2">Account</th>
+                                                <th class="text-left px-2 py-2">Formula</th>
+                                                <th class="text-left px-2 py-2">Debit</th>
+                                                <th class="text-left px-2 py-2">Credit</th>
+                                                <th class="text-left px-2 py-2">Source</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="run-journal-table" class="text-slate-200"></tbody>
+                                    </table>
+                                </div>
+                                <p id="run-balance-result" class="text-xs text-slate-300 mt-2"></p>
                             </div>
                         </div>
                     </div>
@@ -213,7 +286,27 @@
         const postingRules = [
             { voucherType: 'payment', categoryKey: 'pay_supplier', categoryName: 'Trả nợ nhà cung cấp', debitRole: 'ROLE_AP_331', creditRole: 'ROLE_CASH_111_OR_BANK_112', effectiveFrom: '2026-01-01', priority: 20, isActive: true },
             { voucherType: 'payment', categoryKey: 'office_expense', categoryName: 'Chi phí quản lý', debitRole: 'ROLE_EXP_642', creditRole: 'ROLE_CASH_111_OR_BANK_112', effectiveFrom: '2026-01-01', priority: 10, isActive: true },
-            { voucherType: 'receipt', categoryKey: 'customer_payment', categoryName: 'Thu nợ khách hàng', debitRole: 'ROLE_CASH_111_OR_BANK_112', creditRole: 'ROLE_AR_131', effectiveFrom: '2026-01-01', priority: 20, isActive: true }
+            { voucherType: 'receipt', categoryKey: 'customer_payment', categoryName: 'Thu nợ khách hàng', debitRole: 'ROLE_CASH_111_OR_BANK_112', creditRole: 'ROLE_AR_131', effectiveFrom: '2026-01-01', priority: 20, isActive: true },
+            { voucherType: 'import', categoryKey: 'purchase_inventory', categoryName: 'Mua hàng nhập kho', debitRole: 'ROLE_INVENTORY_156', creditRole: 'ROLE_AP_331', effectiveFrom: '2026-01-01', priority: 30, isActive: true },
+            { voucherType: 'export', categoryKey: 'sale_inventory', categoryName: 'Bán hàng xuất kho', debitRole: 'ROLE_AR_131', creditRole: 'ROLE_REV_511', effectiveFrom: '2026-01-01', priority: 30, isActive: true }
+        ];
+
+        const postingRuleLines = [
+            { ruleKey: 'payment:pay_supplier', lineNo: 1, side: 'D', roleKey: 'ROLE_AP_331', formula: 'amount', dimensionFilter: '' },
+            { ruleKey: 'payment:pay_supplier', lineNo: 2, side: 'C', roleKey: 'ROLE_CASH_111_OR_BANK_112', formula: 'amount', dimensionFilter: '' },
+            { ruleKey: 'payment:office_expense', lineNo: 1, side: 'D', roleKey: 'ROLE_EXP_642', formula: 'amount_minus_fee', dimensionFilter: '' },
+            { ruleKey: 'payment:office_expense', lineNo: 2, side: 'D', roleKey: 'ROLE_EXP_642', formula: 'fee', dimensionFilter: 'costType=other' },
+            { ruleKey: 'payment:office_expense', lineNo: 3, side: 'C', roleKey: 'ROLE_CASH_111_OR_BANK_112', formula: 'amount', dimensionFilter: '' },
+            { ruleKey: 'receipt:customer_payment', lineNo: 1, side: 'D', roleKey: 'ROLE_CASH_111_OR_BANK_112', formula: 'amount', dimensionFilter: '' },
+            { ruleKey: 'receipt:customer_payment', lineNo: 2, side: 'C', roleKey: 'ROLE_AR_131', formula: 'amount', dimensionFilter: '' },
+            { ruleKey: 'import:purchase_inventory', lineNo: 1, side: 'D', roleKey: 'ROLE_INVENTORY_156', formula: 'amount', dimensionFilter: '' },
+            { ruleKey: 'import:purchase_inventory', lineNo: 2, side: 'D', roleKey: 'ROLE_VAT_INPUT_133', formula: 'vat', dimensionFilter: '' },
+            { ruleKey: 'import:purchase_inventory', lineNo: 3, side: 'C', roleKey: 'ROLE_AP_331', formula: 'amount_plus_vat', dimensionFilter: '' },
+            { ruleKey: 'export:sale_inventory', lineNo: 1, side: 'D', roleKey: 'ROLE_AR_131', formula: 'amount_plus_vat', dimensionFilter: '' },
+            { ruleKey: 'export:sale_inventory', lineNo: 2, side: 'C', roleKey: 'ROLE_REV_511', formula: 'amount', dimensionFilter: '' },
+            { ruleKey: 'export:sale_inventory', lineNo: 3, side: 'C', roleKey: 'ROLE_VAT_OUTPUT_3331', formula: 'vat', dimensionFilter: '' },
+            { ruleKey: 'export:sale_inventory', lineNo: 4, side: 'D', roleKey: 'ROLE_COGS_632', formula: 'cost', dimensionFilter: '' },
+            { ruleKey: 'export:sale_inventory', lineNo: 5, side: 'C', roleKey: 'ROLE_INVENTORY_156', formula: 'cost', dimensionFilter: '' }
         ];
 
         const roleMappings = [
@@ -221,10 +314,20 @@
             { scopeType: 'branch', scopeId: 'CN01', roleKey: 'ROLE_EXP_642', accountCode: '642', accountId: 'id_642' },
             { scopeType: 'branch', scopeId: 'CN01', roleKey: 'ROLE_CASH_111_OR_BANK_112', accountCode: '111', accountId: 'id_111' },
             { scopeType: 'branch', scopeId: 'CN01', roleKey: 'ROLE_AR_131', accountCode: '131', accountId: 'id_131' },
+            { scopeType: 'branch', scopeId: 'CN01', roleKey: 'ROLE_INVENTORY_156', accountCode: '156', accountId: 'id_156' },
+            { scopeType: 'branch', scopeId: 'CN01', roleKey: 'ROLE_VAT_INPUT_133', accountCode: '1331', accountId: 'id_1331' },
+            { scopeType: 'branch', scopeId: 'CN01', roleKey: 'ROLE_VAT_OUTPUT_3331', accountCode: '3331', accountId: 'id_3331' },
+            { scopeType: 'branch', scopeId: 'CN01', roleKey: 'ROLE_REV_511', accountCode: '511', accountId: 'id_511' },
+            { scopeType: 'branch', scopeId: 'CN01', roleKey: 'ROLE_COGS_632', accountCode: '632', accountId: 'id_632' },
             { scopeType: 'branch', scopeId: 'CN02', roleKey: 'ROLE_CASH_111_OR_BANK_112', accountCode: '112', accountId: 'id_112' },
             { scopeType: 'company', scopeId: 'company', roleKey: 'ROLE_AP_331', accountCode: '331', accountId: 'id_331' },
             { scopeType: 'company', scopeId: 'company', roleKey: 'ROLE_EXP_642', accountCode: '642', accountId: 'id_642' },
             { scopeType: 'company', scopeId: 'company', roleKey: 'ROLE_AR_131', accountCode: '131', accountId: 'id_131' },
+            { scopeType: 'company', scopeId: 'company', roleKey: 'ROLE_INVENTORY_156', accountCode: '156', accountId: 'id_156' },
+            { scopeType: 'company', scopeId: 'company', roleKey: 'ROLE_VAT_INPUT_133', accountCode: '1331', accountId: 'id_1331' },
+            { scopeType: 'company', scopeId: 'company', roleKey: 'ROLE_VAT_OUTPUT_3331', accountCode: '3331', accountId: 'id_3331' },
+            { scopeType: 'company', scopeId: 'company', roleKey: 'ROLE_REV_511', accountCode: '511', accountId: 'id_511' },
+            { scopeType: 'company', scopeId: 'company', roleKey: 'ROLE_COGS_632', accountCode: '632', accountId: 'id_632' },
             { scopeType: 'global', scopeId: 'default', roleKey: 'ROLE_CASH_111_OR_BANK_112', accountCode: '111', accountId: 'id_111' }
         ];
 
@@ -268,6 +371,32 @@
                     bank: 'ROLE_CASH_111_OR_BANK_112'
                 },
                 creditRole: 'ROLE_AR_131'
+            },
+            'import:purchase_inventory': {
+                voucherType: 'import',
+                categoryKey: 'purchase_inventory',
+                categoryName: 'Mua hàng nhập kho',
+                debitRole: 'ROLE_INVENTORY_156',
+                creditRole: 'ROLE_AP_331',
+                lineTemplates: [
+                    { side: 'D', roleKey: 'ROLE_INVENTORY_156', formula: 'amount', dimensionFilter: '' },
+                    { side: 'D', roleKey: 'ROLE_VAT_INPUT_133', formula: 'vat', dimensionFilter: '' },
+                    { side: 'C', roleKey: 'ROLE_AP_331', formula: 'amount_plus_vat', dimensionFilter: '' }
+                ]
+            },
+            'export:sale_inventory': {
+                voucherType: 'export',
+                categoryKey: 'sale_inventory',
+                categoryName: 'Bán hàng xuất kho',
+                debitRole: 'ROLE_AR_131',
+                creditRole: 'ROLE_REV_511',
+                lineTemplates: [
+                    { side: 'D', roleKey: 'ROLE_AR_131', formula: 'amount_plus_vat', dimensionFilter: '' },
+                    { side: 'C', roleKey: 'ROLE_REV_511', formula: 'amount', dimensionFilter: '' },
+                    { side: 'C', roleKey: 'ROLE_VAT_OUTPUT_3331', formula: 'vat', dimensionFilter: '' },
+                    { side: 'D', roleKey: 'ROLE_COGS_632', formula: 'cost', dimensionFilter: '' },
+                    { side: 'C', roleKey: 'ROLE_INVENTORY_156', formula: 'cost', dimensionFilter: '' }
+                ]
             }
         };
 
@@ -303,14 +432,24 @@
         const accountCatalog = [
             { code: '111', id: 'id_111', name: 'Tiền mặt' },
             { code: '112', id: 'id_112', name: 'Tiền gửi ngân hàng' },
+            { code: '1331', id: 'id_1331', name: 'Thuế GTGT đầu vào được khấu trừ' },
             { code: '131', id: 'id_131', name: 'Phải thu khách hàng' },
+            { code: '156', id: 'id_156', name: 'Hàng hóa' },
             { code: '331', id: 'id_331', name: 'Phải trả nhà cung cấp' },
+            { code: '3331', id: 'id_3331', name: 'Thuế GTGT đầu ra phải nộp' },
             { code: '411', id: 'id_411', name: 'Vốn chủ sở hữu' },
+            { code: '511', id: 'id_511', name: 'Doanh thu bán hàng' },
+            { code: '632', id: 'id_632', name: 'Giá vốn hàng bán' },
             { code: '642', id: 'id_642', name: 'Chi phí quản lý' },
             { code: '141', id: 'id_141', name: 'Tạm ứng' }
         ];
 
         let newbieDraft = null;
+        let currentRulePairDraft = [];
+
+        function makeRuleKey(voucherType, categoryKey) {
+            return `${voucherType}:${categoryKey}`;
+        }
 
         function normalizeText(value) {
             return (value || '').toString().trim().toLowerCase();
@@ -335,11 +474,76 @@
                     <td class="px-3 py-2">${rule.categoryKey} - ${rule.categoryName}</td>
                     <td class="px-3 py-2 font-mono text-sky-300">${rule.debitRole}</td>
                     <td class="px-3 py-2 font-mono text-sky-300">${rule.creditRole}</td>
+                    <td class="px-3 py-2">${buildPairDraftFromLines(getRuleLines(rule)).length}</td>
                     <td class="px-3 py-2">${rule.effectiveFrom}</td>
                     <td class="px-3 py-2">${rule.priority}</td>
                     <td class="px-3 py-2">${rule.isActive ? 'Active' : 'Inactive'}</td>
                 </tr>
             `).join('');
+        }
+
+        function buildPairDraftFromLines(lines) {
+            const ordered = [...(lines || [])].sort((a, b) => a.lineNo - b.lineNo);
+            const debits = ordered.filter(x => x.side === 'D');
+            const credits = ordered.filter(x => x.side === 'C');
+            const max = Math.max(debits.length, credits.length);
+            const pairs = [];
+
+            for (let i = 0; i < max; i += 1) {
+                const d = debits[i];
+                const c = credits[i];
+                pairs.push({
+                    debitRole: d?.roleKey || '',
+                    debitFormula: d?.formula || 'amount',
+                    creditRole: c?.roleKey || '',
+                    creditFormula: c?.formula || 'amount',
+                    dimensionFilter: d?.dimensionFilter || c?.dimensionFilter || ''
+                });
+            }
+
+            return pairs;
+        }
+
+        function buildLinesFromPairDraft(pairs) {
+            const lines = [];
+            (pairs || []).forEach(pair => {
+                if (pair.debitRole) {
+                    lines.push({ side: 'D', roleKey: pair.debitRole, formula: pair.debitFormula || 'amount', dimensionFilter: pair.dimensionFilter || '' });
+                }
+                if (pair.creditRole) {
+                    lines.push({ side: 'C', roleKey: pair.creditRole, formula: pair.creditFormula || 'amount', dimensionFilter: pair.dimensionFilter || '' });
+                }
+            });
+            return lines;
+        }
+
+        function getRuleLines(rule) {
+            const key = makeRuleKey(rule.voucherType, rule.categoryKey);
+            const lines = postingRuleLines
+                .filter(x => x.ruleKey === key)
+                .sort((a, b) => a.lineNo - b.lineNo);
+
+            if (lines.length > 0) return lines;
+
+            return [
+                { ruleKey: key, lineNo: 1, side: 'D', roleKey: rule.debitRole, formula: 'amount', dimensionFilter: '' },
+                { ruleKey: key, lineNo: 2, side: 'C', roleKey: rule.creditRole, formula: 'amount', dimensionFilter: '' }
+            ];
+        }
+
+        function replaceRuleLines(ruleKey, lines) {
+            const kept = postingRuleLines.filter(x => x.ruleKey !== ruleKey);
+            const normalized = lines.map((x, idx) => ({
+                ruleKey,
+                lineNo: idx + 1,
+                side: x.side,
+                roleKey: x.roleKey,
+                formula: x.formula,
+                dimensionFilter: x.dimensionFilter || ''
+            }));
+
+            postingRuleLines.length = 0;
+            postingRuleLines.push(...kept, ...normalized);
         }
 
         function setNewbieMode(enabled) {
@@ -366,6 +570,8 @@
             const debit = document.getElementById('rule-debit-role');
             const credit = document.getElementById('rule-credit-role');
             const mapRole = document.getElementById('map-role-key');
+            const pairDebitRole = document.getElementById('rule-pair-debit-role');
+            const pairCreditRole = document.getElementById('rule-pair-credit-role');
             if (!debit || !credit) return;
 
             const options = ['<option value="">Chọn Role...</option>']
@@ -373,6 +579,74 @@
             debit.innerHTML = options.join('');
             credit.innerHTML = options.join('');
             if (mapRole) mapRole.innerHTML = options.join('');
+            if (pairDebitRole) pairDebitRole.innerHTML = options.join('');
+            if (pairCreditRole) pairCreditRole.innerHTML = options.join('');
+        }
+
+        function renderRuleLineTable() {
+            const tbody = document.getElementById('rule-line-table');
+            if (!tbody) return;
+
+            tbody.innerHTML = currentRulePairDraft.map((pair, idx) => `
+                <tr class="border-b border-slate-800">
+                    <td class="px-3 py-2">${idx + 1}</td>
+                    <td class="px-3 py-2 font-mono text-sky-300">${escapeHtml(pair.debitRole || '-')}</td>
+                    <td class="px-3 py-2 font-mono">${escapeHtml(pair.debitFormula || '-')}</td>
+                    <td class="px-3 py-2 font-mono text-sky-300">${escapeHtml(pair.creditRole || '-')}</td>
+                    <td class="px-3 py-2 font-mono">${escapeHtml(pair.creditFormula || '-')}</td>
+                    <td class="px-3 py-2">${escapeHtml(pair.dimensionFilter || '-')}</td>
+                    <td class="px-3 py-2">
+                        <button data-pair-index="${idx}" class="delete-rule-pair rounded border border-rose-500/50 bg-rose-500/10 px-2 py-1 text-xs text-rose-300 hover:bg-rose-500/20">Xóa</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function loadRuleLineDraftFromSelection() {
+            const voucherType = document.getElementById('rule-voucher-type')?.value || '';
+            const categoryKey = normalizeText(document.getElementById('rule-category-key')?.value || '');
+
+            const rule = postingRules.find(x => x.voucherType === voucherType && x.categoryKey === categoryKey);
+            if (rule) {
+                currentRulePairDraft = buildPairDraftFromLines(getRuleLines(rule));
+            } else {
+                const debitRole = document.getElementById('rule-debit-role')?.value || '';
+                const creditRole = document.getElementById('rule-credit-role')?.value || '';
+                currentRulePairDraft = [];
+                if (debitRole || creditRole) {
+                    currentRulePairDraft.push({
+                        debitRole,
+                        debitFormula: 'amount',
+                        creditRole,
+                        creditFormula: 'amount',
+                        dimensionFilter: ''
+                    });
+                }
+            }
+
+            renderRuleLineTable();
+        }
+
+        function addRulePair() {
+            const debitRole = document.getElementById('rule-pair-debit-role')?.value || '';
+            const debitFormula = document.getElementById('rule-pair-debit-formula')?.value || 'amount';
+            const creditRole = document.getElementById('rule-pair-credit-role')?.value || '';
+            const creditFormula = document.getElementById('rule-pair-credit-formula')?.value || 'amount';
+            const dimensionFilter = document.getElementById('rule-pair-dimension')?.value || '';
+
+            if (!debitRole && !creditRole) {
+                alert('Thiếu role Nợ/Có cho cặp định khoản.');
+                return;
+            }
+
+            currentRulePairDraft.push({ debitRole, debitFormula, creditRole, creditFormula, dimensionFilter });
+            renderRuleLineTable();
+        }
+
+        function removeRulePair(index) {
+            if (index < 0 || index >= currentRulePairDraft.length) return;
+            currentRulePairDraft.splice(index, 1);
+            renderRuleLineTable();
         }
 
         function renderMapPresets() {
@@ -407,6 +681,21 @@
             if (debitRoleEl) debitRoleEl.value = debitRole;
             if (creditRoleEl) creditRoleEl.value = creditRole;
             if (effectiveFromEl && !effectiveFromEl.value) effectiveFromEl.value = new Date().toISOString().slice(0, 10);
+
+            if (Array.isArray(template.lineTemplates) && template.lineTemplates.length) {
+                currentRulePairDraft = buildPairDraftFromLines(template.lineTemplates.map((x, idx) => ({ ...x, lineNo: idx + 1 })));
+            } else {
+                currentRulePairDraft = [
+                    {
+                        debitRole,
+                        debitFormula: 'amount',
+                        creditRole,
+                        creditFormula: 'amount',
+                        dimensionFilter: ''
+                    }
+                ];
+            }
+            renderRuleLineTable();
         }
 
         function applyMapPreset() {
@@ -562,6 +851,11 @@
 
             if (existingIndex >= 0) postingRules[existingIndex] = next;
             else postingRules.push(next);
+
+            replaceRuleLines(makeRuleKey(next.voucherType, next.categoryKey), [
+                { side: 'D', roleKey: next.debitRole, formula: 'amount', dimensionFilter: '' },
+                { side: 'C', roleKey: next.creditRole, formula: 'amount', dimensionFilter: '' }
+            ]);
         }
 
         function setNewbieActionResult(text, type = 'info') {
@@ -660,11 +954,18 @@
                 return;
             }
 
+            if (!currentRulePairDraft.length) {
+                alert('Rule phải có ít nhất 1 cặp định khoản.');
+                return;
+            }
+
             const existingIndex = postingRules.findIndex(x => x.voucherType === voucherType && x.categoryKey === categoryKey);
             const next = { voucherType, categoryKey, categoryName, debitRole, creditRole, effectiveFrom, priority, isActive };
 
             if (existingIndex >= 0) postingRules[existingIndex] = next;
             else postingRules.push(next);
+
+            replaceRuleLines(makeRuleKey(voucherType, categoryKey), buildLinesFromPairDraft(currentRulePairDraft));
 
             renderRuleTable();
             renderRuntimeCategoryOptions();
@@ -723,6 +1024,9 @@
             const branchId = document.getElementById('run-branch')?.value || '';
             const postingDate = document.getElementById('run-posting-date')?.value || '';
             const amount = Number(document.getElementById('run-amount')?.value || 0);
+            const vat = Number(document.getElementById('run-vat')?.value || 0);
+            const cost = Number(document.getElementById('run-cost')?.value || 0);
+            const fee = Number(document.getElementById('run-fee')?.value || 0);
 
             const resultEl = document.getElementById('run-result');
             const payloadEl = document.getElementById('run-payload');
@@ -732,38 +1036,60 @@
             if (!rule) {
                 resultEl.textContent = 'Không tìm thấy rule active phù hợp.';
                 payloadEl.textContent = '';
+                renderJournalTable([]);
                 return;
             }
 
-            const debitResolved = resolveRole(rule.debitRole, branchId);
-            const creditResolved = resolveRole(rule.creditRole, branchId);
+            const metrics = {
+                amount,
+                vat,
+                cost,
+                fee,
+                amount_minus_fee: Math.max(0, amount - fee),
+                amount_plus_vat: amount + vat
+            };
 
-            if (!debitResolved || !creditResolved) {
-                resultEl.textContent = 'Thiếu mapping role -> account cho branch/company/global.';
-                payloadEl.textContent = '';
-                return;
-            }
+            const configuredLines = getRuleLines(rule);
+            const lines = [];
 
-            const lines = [
-                {
-                    side: 'debit',
-                    role: rule.debitRole,
-                    accountCode: debitResolved.accountCode,
-                    accountId: debitResolved.accountId,
-                    source: debitResolved.source,
-                    amount
-                },
-                {
-                    side: 'credit',
-                    role: rule.creditRole,
-                    accountCode: creditResolved.accountCode,
-                    accountId: creditResolved.accountId,
-                    source: creditResolved.source,
-                    amount
+            for (const cfg of configuredLines) {
+                const resolved = resolveRole(cfg.roleKey, branchId);
+                if (!resolved) {
+                    resultEl.textContent = `Thiếu mapping role -> account cho ${cfg.roleKey}.`;
+                    payloadEl.textContent = '';
+                    renderJournalTable([]);
+                    return;
                 }
-            ];
 
-            resultEl.textContent = JSON.stringify({ rule, lines }, null, 2);
+                const lineAmount = evaluateFormula(cfg.formula, metrics);
+                if (lineAmount <= 0) continue;
+
+                lines.push({
+                    lineNo: cfg.lineNo,
+                    side: cfg.side,
+                    role: cfg.roleKey,
+                    formula: cfg.formula,
+                    accountCode: resolved.accountCode,
+                    accountId: resolved.accountId,
+                    source: resolved.source,
+                    debit: cfg.side === 'D' ? lineAmount : 0,
+                    credit: cfg.side === 'C' ? lineAmount : 0
+                });
+            }
+
+            const debitTotal = lines.reduce((sum, x) => sum + x.debit, 0);
+            const creditTotal = lines.reduce((sum, x) => sum + x.credit, 0);
+            const isBalanced = Math.abs(debitTotal - creditTotal) < 0.0001;
+
+            resultEl.textContent = JSON.stringify({
+                rule,
+                configuredLines,
+                metrics,
+                journalLineCount: lines.length,
+                debitTotal,
+                creditTotal,
+                isBalanced
+            }, null, 2);
 
             const payload = {
                 voucherType,
@@ -771,16 +1097,50 @@
                 branchId,
                 postingDate,
                 amount,
+                vat,
+                cost,
+                fee,
                 ruleKey: rule.voucherType + ':' + rule.categoryKey,
                 journalLines: lines.map(x => ({
                     accountId: x.accountId,
-                    debit: x.side === 'debit' ? amount : 0,
-                    credit: x.side === 'credit' ? amount : 0,
-                    description: 'Auto posting by configured rule'
+                    debit: x.debit,
+                    credit: x.credit,
+                    role: x.role,
+                    formula: x.formula,
+                    description: 'Auto posting by configured line rule'
                 }))
             };
 
             payloadEl.textContent = JSON.stringify(payload, null, 2);
+            renderJournalTable(lines, debitTotal, creditTotal, isBalanced);
+        }
+
+        function evaluateFormula(formula, metrics) {
+            const key = (formula || '').trim();
+            if (!key || !Object.prototype.hasOwnProperty.call(metrics, key)) return 0;
+            return Number(metrics[key] || 0);
+        }
+
+        function renderJournalTable(lines, debitTotal = 0, creditTotal = 0, isBalanced = false) {
+            const tbody = document.getElementById('run-journal-table');
+            const balanceEl = document.getElementById('run-balance-result');
+            if (!tbody || !balanceEl) return;
+
+            tbody.innerHTML = (lines || []).map(x => `
+                <tr class="border-b border-slate-800">
+                    <td class="px-2 py-2">${x.lineNo}</td>
+                    <td class="px-2 py-2 font-mono text-violet-300">${escapeHtml(x.role)}</td>
+                    <td class="px-2 py-2">${x.accountCode} (${x.accountId})</td>
+                    <td class="px-2 py-2 font-mono">${escapeHtml(x.formula)}</td>
+                    <td class="px-2 py-2">${x.debit.toLocaleString('vi-VN')}</td>
+                    <td class="px-2 py-2">${x.credit.toLocaleString('vi-VN')}</td>
+                    <td class="px-2 py-2">${x.source}</td>
+                </tr>
+            `).join('');
+
+            const cls = isBalanced ? 'text-emerald-300' : 'text-rose-300';
+            balanceEl.className = `text-xs mt-2 ${cls}`;
+            balanceEl.textContent = `Tổng Nợ: ${debitTotal.toLocaleString('vi-VN')} | Tổng Có: ${creditTotal.toLocaleString('vi-VN')} | ${isBalanced ? 'CÂN BẰNG' : 'LỆCH SỔ'}`;
         }
 
         function renderDevCode() {
@@ -794,15 +1154,35 @@
     return await ExecuteInTransactionAsync(async () => // function con 3
     {
         var rule = await GetRuleRequiredAsync(input.VoucherType, input.CategoryKey, input.PostingDate, ct); // function con 4
+        var ruleLines = await GetRuleLinesRequiredAsync(rule.RuleKey, ct); // function con 5
 
-        var debit = await ResolveRoleRequiredAsync(rule.DebitRole, input.BranchId, input.PostingDate, ct); // function con 5
-        var credit = await ResolveRoleRequiredAsync(rule.CreditRole, input.BranchId, input.PostingDate, ct); // function con 5
+        var metrics = new Dictionary<string, decimal>
+        {
+            ["amount"] = input.Amount,
+            ["vat"] = input.Vat,
+            ["fee"] = input.Fee,
+            ["amount_minus_fee"] = Math.Max(0m, input.Amount - input.Fee),
+            ["amount_plus_vat"] = input.Amount + input.Vat
+        }; // function con 6
 
-        var lines = BuildJournalLines(input.Amount, debit, credit, rule.RuleKey); // function con 6
-        ValidateBalanced(lines); // function con 7
+        var lines = new List<JournalLineCreateDto>();
+        foreach (var cfg in ruleLines.OrderBy(x => x.Priority).ThenBy(x => x.LineNo))
+        {
+            if (!DimensionMatched(cfg.DimensionFilter, input.Dimensions)) continue; // function con 7
 
-        var entryId = await _journalWriter.WriteAsync(input, lines, ct); // function con 8
-        await WriteAuditAsync(input, rule, lines, entryId, ct); // function con 9
+            var account = await ResolveRoleRequiredAsync(cfg.RoleKey, input.BranchId, input.PostingDate, ct); // function con 8
+            var amount = EvaluateFormula(cfg.Formula, metrics); // function con 9
+            if (amount <= 0m) continue;
+
+            lines.Add(cfg.Side == "D"
+                ? new JournalLineCreateDto(account.AccountId, amount, 0m, rule.RuleKey)
+                : new JournalLineCreateDto(account.AccountId, 0m, amount, rule.RuleKey));
+        }
+
+        ValidateBalanced(lines); // function con 10
+
+        var entryId = await _journalWriter.WriteAsync(input, lines, ct); // function con 11
+        await WriteAuditAsync(input, rule, lines, entryId, ct); // function con 12
 
         return new PostingResultDto(entryId, rule.RuleKey, lines.Count);
     }, ct);
@@ -839,11 +1219,13 @@ private async Task<AccountMapping> ResolveRoleRequiredAsync(string roleKey, stri
             renderDevCode();
             renderNewbiePreview();
             setNewbieMode(false);
+            loadRuleLineDraftFromSelection();
 
             const dateInput = document.getElementById('run-posting-date');
             if (dateInput && !dateInput.value) dateInput.value = new Date().toISOString().slice(0, 10);
 
             document.getElementById('add-rule')?.addEventListener('click', upsertRule);
+            document.getElementById('add-rule-pair')?.addEventListener('click', addRulePair);
             document.getElementById('add-mapping')?.addEventListener('click', upsertMapping);
             document.getElementById('apply-rule-template')?.addEventListener('click', applyRuleTemplate);
             document.getElementById('apply-map-preset')?.addEventListener('click', applyMapPreset);
@@ -860,9 +1242,21 @@ private async Task<AccountMapping> ResolveRoleRequiredAsync(string roleKey, stri
             });
             document.getElementById('map-scope-type')?.addEventListener('change', syncScopeDefault);
             document.getElementById('rule-category-name')?.addEventListener('blur', autoFillCategoryKeyFromName);
+            document.getElementById('rule-category-key')?.addEventListener('blur', loadRuleLineDraftFromSelection);
+            document.getElementById('rule-voucher-type')?.addEventListener('change', loadRuleLineDraftFromSelection);
+            document.getElementById('rule-debit-role')?.addEventListener('change', loadRuleLineDraftFromSelection);
+            document.getElementById('rule-credit-role')?.addEventListener('change', loadRuleLineDraftFromSelection);
             document.getElementById('map-account-code')?.addEventListener('blur', autoFillAccountIdFromCode);
             document.getElementById('run-voucher-type')?.addEventListener('change', renderRuntimeCategoryOptions);
             document.getElementById('run-simulate')?.addEventListener('click', simulateRuntime);
+
+            document.getElementById('rule-line-table')?.addEventListener('click', (event) => {
+                const target = event.target;
+                if (!(target instanceof HTMLElement)) return;
+                if (!target.classList.contains('delete-rule-pair')) return;
+                const idx = Number(target.getAttribute('data-pair-index') || -1);
+                removeRulePair(idx);
+            });
 
             document.getElementById('newbie-mode-toggle')?.addEventListener('change', (e) => setNewbieMode(Boolean(e.target.checked)));
             document.getElementById('newbie-template')?.addEventListener('change', renderNewbiePreview);

@@ -165,6 +165,142 @@
                         </div>
                     </div>
                 </section>
+
+                <section class="glassmorphism rounded-xl p-6 border border-fuchsia-500/30 mt-6">
+                    <h3 class="text-lg font-semibold text-fuchsia-300 mb-3">Flow lên báo cáo từ cấu hình hạch toán</h3>
+                    <p class="text-sm text-slate-300 mb-4">Nguyên tắc quan trọng: <strong>Rule/Mapping chỉ dùng lúc ghi sổ</strong>. Khi lên báo cáo, hệ thống đọc từ <strong>journal_lines đã hạch toán</strong>, không chạy lại rule.</p>
+
+                    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-4">
+                        <div class="rounded-lg border border-slate-700 bg-slate-900/70 p-4">
+                            <p class="text-sm font-semibold text-fuchsia-300">1. Flow lên Sổ nhật ký chung</p>
+                            <ol class="list-decimal list-inside text-sm text-slate-300 mt-2 space-y-1">
+                                <li>Lấy journal entry + journal line đã ghi sổ.</li>
+                                <li>Join sang accounts để hiển thị mã/tên tài khoản.</li>
+                                <li>Nếu xem chi nhánh: filter theo <span class="font-mono">branch_id</span>.</li>
+                                <li>Nếu xem toàn công ty: lấy tất cả branch thuộc công ty.</li>
+                                <li>Sort theo ngày hạch toán, số chứng từ, số dòng.</li>
+                            </ol>
+                        </div>
+
+                        <div class="rounded-lg border border-slate-700 bg-slate-900/70 p-4">
+                            <p class="text-sm font-semibold text-fuchsia-300">2. Flow lên Sổ chi tiết tài khoản</p>
+                            <ol class="list-decimal list-inside text-sm text-slate-300 mt-2 space-y-1">
+                                <li>Chọn tài khoản hoặc nhóm tài khoản.</li>
+                                <li>Tính số dư đầu kỳ trước <span class="font-mono">fromDate</span>.</li>
+                                <li>Lấy phát sinh trong kỳ.</li>
+                                <li>Tính số dư chạy theo từng dòng.</li>
+                                <li>Cho drill-down về chứng từ gốc.</li>
+                            </ol>
+                        </div>
+
+                        <div class="rounded-lg border border-slate-700 bg-slate-900/70 p-4">
+                            <p class="text-sm font-semibold text-fuchsia-300">3. Cơ chế xem CN / Toàn công ty</p>
+                            <ol class="list-decimal list-inside text-sm text-slate-300 mt-2 space-y-1">
+                                <li>Xem CN: filter đúng 1 <span class="font-mono">branch_id</span>.</li>
+                                <li>Xem Toàn công ty: lấy tất cả branch được phép xem.</li>
+                                <li>Chi tiết: giữ nguyên từng dòng, thêm cột chi nhánh.</li>
+                                <li>Tổng hợp: group theo <span class="font-mono">account_id</span>, <span class="font-mono">parent_id</span> hoặc <span class="font-mono">canonical_account_key</span>.</li>
+                                <li>Không group bằng text account code thuần túy.</li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                        <div class="rounded-lg border border-slate-700 bg-slate-900 p-4">
+                            <p class="text-xs uppercase tracking-wide text-fuchsia-300 font-semibold mb-2">Pseudo-code C# - Query Sổ nhật ký chung</p>
+                            <pre class="overflow-auto rounded bg-slate-950 p-3 text-xs text-slate-200 border border-slate-700"><code>public async Task<IReadOnlyList<JournalReportRowDto>> GetJournalReportAsync(
+    DateTime fromDate,
+    DateTime toDate,
+    string scope,
+    string? branchId,
+    CancellationToken ct)
+{
+    var branchIds = await ResolveBranchScopeAsync(scope, branchId, ct);
+
+    return await _db.JournalLines
+        .AsNoTracking()
+        .Where(x => x.PostingDate &gt;= fromDate &amp;&amp; x.PostingDate &lt;= toDate)
+        .Where(x => branchIds.Contains(x.BranchId))
+        .OrderBy(x => x.PostingDate)
+        .ThenBy(x => x.JournalEntry.SourceVoucherNo)
+        .ThenBy(x => x.LineNo)
+        .Select(x => new JournalReportRowDto(
+            x.PostingDate,
+            x.BranchId,
+            x.JournalEntry.SourceVoucherNo,
+            x.AccountId,
+            x.Account.Code,
+            x.Account.Name,
+            x.Debit,
+            x.Credit,
+            x.Description
+        ))
+        .ToListAsync(ct);
+}</code></pre>
+                        </div>
+
+                        <div class="rounded-lg border border-slate-700 bg-slate-900 p-4">
+                            <p class="text-xs uppercase tracking-wide text-fuchsia-300 font-semibold mb-2">Pseudo-code C# - Query Sổ chi tiết tài khoản</p>
+                            <pre class="overflow-auto rounded bg-slate-950 p-3 text-xs text-slate-200 border border-slate-700"><code>public async Task<AccountLedgerReportDto> GetAccountLedgerAsync(
+    DateTime fromDate,
+    DateTime toDate,
+    string scope,
+    string? branchId,
+    Guid? accountId,
+    string? canonicalAccountKey,
+    CancellationToken ct)
+{
+    var branchIds = await ResolveBranchScopeAsync(scope, branchId, ct);
+
+    var query = _db.JournalLines
+        .AsNoTracking()
+        .Where(x => branchIds.Contains(x.BranchId));
+
+    if (accountId.HasValue)
+        query = query.Where(x => x.AccountId == accountId.Value);
+    else if (!string.IsNullOrWhiteSpace(canonicalAccountKey))
+        query = query.Where(x => x.Account.CanonicalAccountKey == canonicalAccountKey);
+
+    var opening = await query
+        .Where(x => x.PostingDate &lt; fromDate)
+        .SumAsync(x => x.Debit - x.Credit, ct);
+
+    var rows = await query
+        .Where(x => x.PostingDate &gt;= fromDate &amp;&amp; x.PostingDate &lt;= toDate)
+        .OrderBy(x => x.PostingDate)
+        .ThenBy(x => x.LineNo)
+        .Select(x => new LedgerRowDto(
+            x.PostingDate,
+            x.BranchId,
+            x.JournalEntry.SourceVoucherNo,
+            x.Debit,
+            x.Credit,
+            x.Description
+        ))
+        .ToListAsync(ct);
+
+    decimal running = opening;
+    foreach (var row in rows)
+    {
+        running += row.Debit - row.Credit;
+        row.RunningBalance = running;
+    }
+
+    return new AccountLedgerReportDto(opening, rows, running);
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 rounded-lg border border-slate-700 bg-slate-900 p-4">
+                        <p class="text-xs uppercase tracking-wide text-fuchsia-300 font-semibold mb-2">Nguyên tắc mapping để xem Toàn công ty</p>
+                        <ul class="list-disc list-inside text-sm text-slate-300 space-y-1">
+                            <li>Nếu toàn công ty dùng chung một tài khoản thì group theo <span class="font-mono">account_id</span>.</li>
+                            <li>Nếu mỗi chi nhánh có tài khoản con riêng thì group theo <span class="font-mono">parent_id</span> hoặc <span class="font-mono">canonical_account_key</span>.</li>
+                            <li><span class="font-mono">account_id</span> là khóa bền cho dữ liệu lịch sử; account code chỉ là lớp hiển thị.</li>
+                            <li>Nhật ký chung toàn công ty là lấy toàn bộ dòng journal của các chi nhánh, không phải chạy lại rule.</li>
+                        </ul>
+                    </div>
+                </section>
             </div>
         </main>
     </div>
@@ -235,6 +371,78 @@ public sealed record PostingRule(
         ValidateBalanced(lines);
         var entryId = await _journalWriter.WriteAsync(evt, lines, rule.Version, ct);
 
+        await tx.CommitAsync(ct);
+        return entryId;
+    }
+    catch
+    {
+        await tx.RollbackAsync(ct);
+        throw;
+    }
+}`
+            },
+            multiLineVoucher: {
+                title: '1 chứng từ nhiều cặp định khoản',
+                intro: 'Cấu hình theo danh sách dòng bút toán (line-level) thay vì chỉ 1 cặp DebitRole/CreditRole. Áp dụng trực tiếp cho chứng từ nhập/xuất.',
+                code: `public sealed record PostingRuleLine(
+    int LineNo,
+    string Side,              // "D" | "C"
+    string RoleKey,           // ROLE_AR, ROLE_TAX_OUT, ROLE_REVENUE...
+    string Formula,           // amount, vat, fee, amount - discount
+    int Priority,
+    string? DimensionFilter   // optional: channel=delivery, taxType=vat10...
+);
+
+public sealed record PostingRuleV2(
+    string RuleKey,
+    string EventType,
+    IReadOnlyList<PostingRuleLine> Lines,
+    int Version,
+    DateTime EffectiveFrom,
+    DateTime? EffectiveTo
+);
+
+// Ví dụ 1: Chứng từ nhập hàng
+// N156: amount
+// N1331: vat
+// C331: amount_plus_vat
+
+// Ví dụ 2: Chứng từ xuất bán
+// N131: amount_plus_vat
+// C511: amount
+// C3331: vat
+// N632: cost
+// C156: cost
+
+public async Task<Guid> PostMultiLineAsync(PostingEvent evt, CancellationToken ct)
+{
+    await using var tx = await _db.Database.BeginTransactionAsync(ct);
+    try
+    {
+        var rule = await _ruleSelector.SelectV2Async(evt, ct);
+        var orderedLines = rule.Lines.OrderBy(x => x.Priority).ThenBy(x => x.LineNo).ToList();
+
+        var journalLines = new List<JournalLineCreateDto>();
+        foreach (var line in orderedLines)
+        {
+            if (!DimensionMatched(line.DimensionFilter, evt.Dimensions))
+                continue;
+
+            var accountId = await _resolver.ResolveAccountIdAsync(line.RoleKey, evt.BranchId, evt.PostingDate, ct);
+            var amount = _formula.Evaluate(line.Formula, evt.Metrics);
+            if (amount <= 0m) continue;
+
+            journalLines.Add(line.Side == "D"
+                ? new JournalLineCreateDto(accountId, amount, 0m, rule.RuleKey)
+                : new JournalLineCreateDto(accountId, 0m, amount, rule.RuleKey));
+        }
+
+        if (!journalLines.Any())
+            throw new InvalidOperationException("EMPTY_JOURNAL_LINES");
+
+        ValidateBalanced(journalLines); // sum(Debit) == sum(Credit)
+
+        var entryId = await _journalWriter.WriteAsync(evt, journalLines, rule.Version, ct);
         await tx.CommitAsync(ct);
         return entryId;
     }
