@@ -443,9 +443,10 @@ async function postVoucher(payload, actor) {
 
 ## 7.1 Vai trò cố định
 - Quốc: owner core kế toán + cố vấn nghiệp vụ + reviewer bắt buộc trước merge các rule hạch toán.
-- Thông: fullstack (làm được cả BE và FE), lead chính nhóm nghiệp vụ chứng từ/công nợ.
-- Trạng: fullstack (làm được cả BE và FE), lead chính nhóm màn hình báo cáo/hóa đơn/queue.
+- Thông: fullstack (làm được cả BE và FE), owner chính nhóm Thu/Chi + công nợ + đối soát + hóa đơn mua.
+- Trạng: fullstack (làm được cả BE và FE), owner chính nhóm Nhập/Xuất + sổ sách + hóa đơn bán + backlog chứng từ.
 - Quy ước phân công: mỗi chức năng có 1 owner chính chịu trách nhiệm end-to-end (BE + FE), 1 người phối hợp làm backup.
+- Nguyên tắc cân tải: phần chức năng ngoài core của Quốc được chia đều Thông 6 chức năng và Trạng 6 chức năng.
 
 ## 7.2 Ma trận owner theo chức năng (owner end-to-end)
 
@@ -462,9 +463,9 @@ async function postVoucher(payload, actor) {
 | 3.9 Đối soát | Thông | Trạng | Chốt bộ rule sai lệch bắt buộc |
 | 3.10 Chứng từ thu | Thông | Trạng | Duyệt matrix định khoản thu |
 | 3.11 Chứng từ chi | Thông | Trạng | Duyệt matrix định khoản chi |
-| 3.12 Chứng từ nhập | Thông | Trạng | Duyệt VAT đầu vào + đồng bộ tồn kho |
-| 3.13 Chứng từ xuất | Thông | Trạng | Duyệt doanh thu/VAT/giá vốn và chặn âm kho |
-| 3.14 Hóa đơn mua vào | Trạng | Thông | Cố vấn rule khấu trừ VAT và liên kết voucher |
+| 3.12 Chứng từ nhập | Trạng | Thông | Duyệt VAT đầu vào + đồng bộ tồn kho |
+| 3.13 Chứng từ xuất | Trạng | Thông | Duyệt doanh thu/VAT/giá vốn và chặn âm kho |
+| 3.14 Hóa đơn mua vào | Thông | Trạng | Cố vấn rule khấu trừ VAT và liên kết voucher |
 | 3.15 Hóa đơn bán ra | Trạng | Thông | Cố vấn rule doanh thu/VAT/công nợ |
 | 3.16 Chứng từ chưa hạch toán | Trạng | Thông | Chốt tiêu chí backlog về 0 trước khóa |
 | 3.17 Cấu hình kỳ | Quốc | Trạng | Chốt tham số kỳ, defaultLockDay, phạm vi ảnh hưởng |
@@ -474,8 +475,8 @@ async function postVoucher(payload, actor) {
 | Sprint | Quốc | Thông | Trạng |
 |---|---|---|---|
 | Sprint 1 | Chốt core 3.1, 3.2; review thiết kế API/UX | Owner end-to-end 3.10, 3.11 (BE + FE), phối hợp 3.1, 3.2 | Owner end-to-end 3.1, 3.2 (BE + FE), phối hợp 3.10, 3.11 |
-| Sprint 2 | Duyệt rule kho và VAT cho 3.12, 3.13 | Owner end-to-end 3.12, 3.13; phối hợp 3.3 | Owner end-to-end 3.3; phối hợp 3.12, 3.13 |
-| Sprint 3 | Chốt mapping 3.5, review số liệu 3.4 | Phối hợp owner 3.4, 3.5 và API 3.14, 3.15 | Owner end-to-end 3.4, 3.5, 3.14, 3.15 |
+| Sprint 2 | Duyệt rule kho và VAT cho 3.12, 3.13 | Phối hợp nghiệp vụ kho và review API cho 3.12, 3.13 | Owner end-to-end 3.3, 3.12, 3.13 |
+| Sprint 3 | Chốt mapping 3.5, review số liệu 3.4 | Owner end-to-end 3.14; phối hợp 3.4, 3.5 | Owner end-to-end 3.4, 3.15; phối hợp 3.14 |
 | Sprint 4 | Chốt rule kỳ kế toán 3.17 | Owner end-to-end 3.7, 3.8, 3.9 | Owner end-to-end 3.16, 3.17; phối hợp 3.7, 3.8, 3.9 |
 | Sprint 5 | Chốt nghiệp vụ 3.6, sign-off go-live | Owner end-to-end 3.6 + hardening | Owner end-to-end FE đối soát 3.9 + hardening/UAT fixes |
 
@@ -488,13 +489,13 @@ async function postVoucher(payload, actor) {
 - Duyệt test scenario các case sai lệch lớn: lệch Nợ/Có, lệch VAT, âm kho.
 
 ### Thông
-- Fullstack owner cho nhóm nghiệp vụ chứng từ và công nợ: 3.7 -> 3.13.
+- Fullstack owner cân tải 6 chức năng: 3.7, 3.8, 3.9, 3.10, 3.11, 3.14.
 - Viết unit test service BE và integration test API cho toàn bộ luồng post chứng từ.
 - Tối ưu transaction và idempotency cho run kết chuyển/đối soát.
 - Fix bug mức P1 liên quan sai định khoản trong vòng 24h.
 
 ### Trạng
-- Fullstack owner cho nhóm màn hình nghiệp vụ và báo cáo: 3.3, 3.4, 3.14, 3.15, 3.16.
+- Fullstack owner cân tải 6 chức năng: 3.3, 3.4, 3.12, 3.13, 3.15, 3.16.
 - Phối hợp Thông hoàn thiện contract request/response và trực tiếp xử lý BE khi cần chia tải.
 - Chuẩn hóa UX validation cho form chứng từ và trạng thái lỗi nghiệp vụ.
 - Viết e2e test cho luồng từ tạo chứng từ đến lên báo cáo.

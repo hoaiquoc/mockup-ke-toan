@@ -38,7 +38,7 @@
                         <p class="text-xs uppercase tracking-wide text-cyan-300 font-semibold">Thông</p>
                         <h3 class="text-lg font-semibold mt-1">Fullstack lead nghiệp vụ</h3>
                         <ul class="list-disc list-inside text-sm text-slate-300 mt-3 space-y-1">
-                            <li>API hạch toán chứng từ, công nợ, đối soát.</li>
+                            <li>Owner Thu/Chi, công nợ, đối soát, hóa đơn mua.</li>
                             <li>Transaction, idempotency, unit test service.</li>
                             <li>Sửa bug P1 liên quan sai định khoản.</li>
                         </ul>
@@ -47,7 +47,7 @@
                         <p class="text-xs uppercase tracking-wide text-emerald-300 font-semibold">Trạng</p>
                         <h3 class="text-lg font-semibold mt-1">Fullstack lead màn hình</h3>
                         <ul class="list-disc list-inside text-sm text-slate-300 mt-3 space-y-1">
-                            <li>Màn hình báo cáo, công nợ, hóa đơn, queue.</li>
+                            <li>Owner Nhập/Xuất, sổ sách, hóa đơn bán, queue backlog.</li>
                             <li>Chuẩn hóa UX validation theo rule BE.</li>
                             <li>E2E luồng từ chứng từ đến báo cáo.</li>
                         </ul>
@@ -80,9 +80,9 @@
                                 <tr><td class="p-4">3.9 Đối soát</td><td class="p-4">Thông</td><td class="p-4">Trạng</td><td class="p-4">Rule đối soát + queue xử lý sai lệch.</td></tr>
                                 <tr><td class="p-4">3.10 Chứng từ thu</td><td class="p-4">Thông</td><td class="p-4">Trạng</td><td class="p-4">Owner end-to-end BE+FE cho post receipt và form phiếu thu.</td></tr>
                                 <tr><td class="p-4">3.11 Chứng từ chi</td><td class="p-4">Thông</td><td class="p-4">Trạng</td><td class="p-4">Owner end-to-end BE+FE cho post payment và form phiếu chi.</td></tr>
-                                <tr><td class="p-4">3.12 Chứng từ nhập</td><td class="p-4">Thông</td><td class="p-4">Trạng</td><td class="p-4">Đồng bộ tồn kho và VAT đầu vào.</td></tr>
-                                <tr><td class="p-4">3.13 Chứng từ xuất</td><td class="p-4">Thông</td><td class="p-4">Trạng</td><td class="p-4">2 cặp bút toán + chặn âm kho.</td></tr>
-                                <tr><td class="p-4">3.14 Hóa đơn mua vào</td><td class="p-4">Trạng</td><td class="p-4">Thông</td><td class="p-4">FE danh sách + BE link voucher.</td></tr>
+                                <tr><td class="p-4">3.12 Chứng từ nhập</td><td class="p-4">Trạng</td><td class="p-4">Thông</td><td class="p-4">Owner end-to-end BE+FE, đồng bộ tồn kho và VAT đầu vào.</td></tr>
+                                <tr><td class="p-4">3.13 Chứng từ xuất</td><td class="p-4">Trạng</td><td class="p-4">Thông</td><td class="p-4">Owner end-to-end BE+FE, 2 cặp bút toán + chặn âm kho.</td></tr>
+                                <tr><td class="p-4">3.14 Hóa đơn mua vào</td><td class="p-4">Thông</td><td class="p-4">Trạng</td><td class="p-4">Owner end-to-end FE danh sách + BE link voucher.</td></tr>
                                 <tr><td class="p-4">3.15 Hóa đơn bán ra</td><td class="p-4">Trạng</td><td class="p-4">Thông</td><td class="p-4">FE danh sách + BE link voucher.</td></tr>
                                 <tr><td class="p-4">3.16 Chứng từ chưa hạch toán</td><td class="p-4">Trạng</td><td class="p-4">Thông</td><td class="p-4">Queue backlog, bắt buộc về 0 trước khóa sổ.</td></tr>
                                 <tr><td class="p-4">3.17 Cấu hình kỳ kế toán</td><td class="p-4">Quốc</td><td class="p-4">Trạng</td><td class="p-4">Chốt default lock day và phạm vi ảnh hưởng.</td></tr>
@@ -115,14 +115,14 @@
                                 <tr>
                                     <td class="p-4">Sprint 2</td>
                                     <td class="p-4">Duyệt rule 3.12, 3.13.</td>
-                                    <td class="p-4">Owner end-to-end 3.12, 3.13; phối hợp 3.3.</td>
-                                    <td class="p-4">Owner end-to-end 3.3; phối hợp 3.12, 3.13.</td>
+                                    <td class="p-4">Phối hợp nghiệp vụ kho và review API cho 3.12, 3.13.</td>
+                                    <td class="p-4">Owner end-to-end 3.3, 3.12, 3.13.</td>
                                 </tr>
                                 <tr>
                                     <td class="p-4">Sprint 3</td>
                                     <td class="p-4">Chốt mapping 3.5, review số liệu 3.4.</td>
-                                    <td class="p-4">Phối hợp owner 3.4, 3.5; hỗ trợ API 3.14, 3.15.</td>
-                                    <td class="p-4">Owner end-to-end 3.4, 3.5, 3.14, 3.15.</td>
+                                    <td class="p-4">Owner end-to-end 3.14; phối hợp 3.4, 3.5.</td>
+                                    <td class="p-4">Owner end-to-end 3.4, 3.15; phối hợp 3.14.</td>
                                 </tr>
                                 <tr>
                                     <td class="p-4">Sprint 4</td>
